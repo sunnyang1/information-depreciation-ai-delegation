@@ -23,6 +23,9 @@ pandas
 # ========== 可视化 ==========
 matplotlib
 
+# ========== 回归分析 ==========
+statsmodels
+
 # ========== 可选依赖 ==========
 # sentencepiece        # 部分模型需要 (如 LLaMA)
 # protobuf             # 部分模型需要
