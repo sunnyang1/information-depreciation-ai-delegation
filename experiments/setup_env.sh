@@ -1,5 +1,7 @@
 #!/bin/bash
-# setup_env.sh - AutoDL环境一键配置脚本 (v2.0)
+# setup_env.sh - AutoDL环境一键配置脚本 (v2.1)
+# 更新记录:
+#   v2.1 - 修复 datasets==2.14.0 与 pyarrow>=15 的兼容性问题 (PyExtensionType 移除)
 # 使用方法: bash setup_env.sh
 #
 # 功能说明:
@@ -74,6 +76,8 @@ ok "PyTorch安装完成"
 # ============ 3. 安装核心依赖 ============
 info "步骤 3/8: 安装transformers及相关库"
 pip install transformers==4.35.0
+# 先安装兼容版 pyarrow，避免 datasets==2.14.0 导入错误 (PyExtensionType)
+pip install "pyarrow>=12.0.0,<14.0.0"
 pip install datasets==2.14.0
 pip install accelerate==0.24.0
 pip install bitsandbytes==0.41.0
