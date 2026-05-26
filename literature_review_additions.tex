@@ -1,0 +1,172 @@
+% =============================================================================
+% LITERATURE REVIEW ADDITIONS AND CORRECTIONS
+% =============================================================================
+% This file contains:
+% 1. New subsection: Multi-Stage Information Design
+% 2. New subsection: AI and Organizations
+% 3. Citation status corrections for Ide-Talamas and Klein-Wieczorek
+% 4. Additional citations for Strategic Information Transmission section
+% 5. Corrected bibliography entries
+% =============================================================================
+
+% ---------------------------------------------------------------------------
+% 1. NEW SUBSECTION: Multi-Stage Information Design
+%    Insert after Related Literature Section 2 (e.g., after Information Design)
+% ---------------------------------------------------------------------------
+
+\subsection{Multi-Stage Information Design}
+
+A growing literature studies information design in dynamic and multi-stage settings. In these environments, a sender strategically controls the flow of information to a receiver (or receivers) who take actions over time. Our paper shares with this literature the fundamental premise that information is transmitted and evolves across multiple stages, but differs in emphasizing constrained information \emph{processing}---arising from attention scarcity within hierarchical organizations---rather than strategic information \emph{withholding} by a sender.
+
+\citet{ely2017beeps} studies a dynamic information transmission problem in which a sender communicates the state of a Markov process to a receiver via binary signals (``beeps''). The optimal signaling strategy involves selective disclosure: the sender pools states and releases information only when it is most consequential for the receiver's decision. The key insight is that the \emph{timing} of information revelation is a strategic choice, and the sender may optimally delay or suppress information to influence the receiver's beliefs. Our framework differs in that the constraint on information transmission arises not from a sender's strategic objectives but from the organizational limitation that each processing layer has finite attention capacity. In our model, information is gradually lost or distorted not because an agent wishes to manipulate beliefs, but because the agent cannot attend to all relevant signals.
+
+\citet{renault2017optimal} analyze optimal dynamic information provision in a sender-receiver framework with a persistent binary state. They characterize the sender's value function and show that the optimal policy involves gradual revelation: information is released piecemeal over time to maximize the sender's expected payoff. The dynamics of belief updating are central to their analysis, as the sender faces a trade-off between revealing information early (to guide current actions) and withholding it (to preserve future influence). In our model, similar intertemporal trade-offs arise, but they are driven by organizational rather than strategic considerations: each layer of the hierarchy must decide how to allocate its limited attention across competing signals, and the optimal policy balances immediate decision quality against the value of passing refined information downstream.
+
+\citet{escude2023slow} study ``slow persuasion,'' in which a sender provides public information over time subject to a graduality constraint. They show that when information can only accumulate gradually, the sender's ability to persuade is inhibited relative to the unconstrained benchmark, and less-than-full information may be provided even when players have aligned preferences. The graduality constraint in their model is exogenous, much as the attention constraint in our framework is determined by the organizational technology. The key difference is that their constraint limits the \emph{speed} of information acquisition, whereas ours limits the \emph{volume} of information that can be processed at each layer. Nevertheless, both analyses yield similar insights: constrained information processing leads to welfare losses relative to the unconstrained benchmark, and optimal organizational design must account for these frictions.
+
+\citet{smolin2021dynamic} studies a principal who designs a dynamic evaluation policy for an agent of uncertain productivity. The principal commits to a sequence of performance evaluations, and the agent observes these evaluations and decides when to quit. Smolin shows that the equilibrium is Pareto efficient and that the wage deterministically grows with tenure. The evaluation policy serves as a dynamic information revelation mechanism: the principal controls the informativeness of evaluations to shape the agent's continuation decisions. Our model shares the feature that information structures are chosen dynamically, but in our setting the designer chooses the \emph{architecture} of information processing---the number of layers and the allocation of attention---rather than the informativeness of signals per se.
+
+The common thread across these papers is that information is a flow variable that must be managed over time. Our contribution is to study how this flow is governed by organizational structure: in a hierarchy with attention-constrained agents, the optimal architecture determines not only \emph{what} information is transmitted but also \emph{how much} of it survives at each stage. The multi-stage information design literature emphasizes the strategic motives of a single sender; we emphasize the systemic constraints of a multi-agent processing network.
+
+% ---------------------------------------------------------------------------
+% 2. NEW SUBSECTION: AI and Organizations
+%    Insert after Related Literature Section 3 (e.g., after Organizations)
+% ---------------------------------------------------------------------------
+
+\subsection{AI and Organizations}
+
+A substantial empirical and theoretical literature documents the effects of artificial intelligence on productivity, labor markets, and the organization of work. Our paper complements this literature by examining the \emph{internal} structure of AI systems---how multiple AI agents should be organized into hierarchical architectures---rather than the effects of AI on human labor markets.
+
+\citet{acemoglu2018race} develop a task-based framework in which automation technologies displace labor in tasks previously performed by workers. Their key insight is that while automation directly reduces labor demand, it also indirectly encourages the creation of new tasks in which labor has a comparative advantage. The long-run effects on employment and wages depend on the race between automation and new task creation. \citet{acemoglu2022tasks} extend this framework to study wage inequality, showing that a substantial fraction of the rise in US wage inequality since 1980 can be attributed to automation of routine tasks. Our paper takes a different perspective: rather than studying how AI substitutes for or complements human labor in existing organizational structures, we ask how AI agents themselves should be organized into efficient architectures for processing information.
+
+\citet{acemoglu2022ai} study the impact of AI on labor markets using evidence from online vacancies. They document that AI-related skills are increasingly demanded in occupations that combine cognitive and technical tasks, and that AI adoption is associated with shifts in skill requirements rather than pure displacement. These findings motivate our focus on the internal organization of AI systems: as AI agents become more capable of performing cognitive tasks, the question of how to structure their interactions becomes central to realizing productivity gains.
+
+\citet{noy2023experimental} provide experimental evidence that generative AI tools substantially increase worker productivity. In a randomized controlled trial with professional writers, they find that access to ChatGPT reduces task completion time by 40\% and increases output quality. Importantly, the productivity gains are largest for less-skilled workers, suggesting that AI can compress skill-based wage differentials. \citet{peng2023impact} report similar findings for software developers using GitHub Copilot, documenting a 55.8\% reduction in task completion time. These empirical results establish that AI tools can meaningfully augment human productivity; our paper contributes by providing a theoretical framework for the \emph{design} of AI systems when multiple agents interact in a hierarchical structure.
+
+Our work is complementary to this literature in the following sense. The existing literature studies the \emph{macro} effects of AI adoption on human workers and firms---how AI changes the demand for skills, the distribution of wages, and the productivity of existing organizational forms. In contrast, we study the \emph{micro} design of AI systems themselves: given that AI agents have heterogeneous capabilities and attention constraints, what is the optimal hierarchical architecture for information processing? The macro literature asks how AI fits into existing human organizations; we ask how AI agents should be organized among themselves. These questions are complementary: as firms adopt AI, understanding both the human-AI interface and the internal organization of AI systems becomes essential for realizing the full potential of artificial intelligence.
+
+% ---------------------------------------------------------------------------
+% 3. CITATION STATUS CORRECTIONS
+%    Use these revised citation formats in the main text
+% ---------------------------------------------------------------------------
+
+% For Ide and Talamas (2025):
+% Ide and Talamas (2025) embed AI into the knowledge-hierarchy framework of
+% Garicano (2000) and study how autonomous and non-autonomous AI affects
+% occupational stratification, firm size, and wages. Published in the
+% \textit{Journal of Political Economy}.
+
+% For Klein and Wieczorek (2026):
+% Klein and Wieczorek (2026), forthcoming in the \textit{Quarterly Journal of
+% Economics}, study the optimal organizational structure of AI systems and
+% characterize when hierarchical architectures dominate flat ones.
+
+% ---------------------------------------------------------------------------
+% 4. ADDITIONAL CITATIONS FOR STRATEGIC INFORMATION TRANSMISSION SECTION
+%    Insert in the Extensions section (e.g., Section 8.2)
+% ---------------------------------------------------------------------------
+
+% In the Strategic Information Transmission subsection, add:
+% The literature on dynamic information transmission 
+% \citep{ely2017beeps, renault2017optimal} studies settings in which a sender
+% strategically controls the timing and content of information revelation to
+% influence a sequence of receiver actions. While we focus on non-strategic
+% information loss due to attention constraints, the same formal tools can be
+% applied to settings in which intermediate agents strategically distort
+% information. We discuss this connection in Section~\ref{sec:strategic}.
+
+% ---------------------------------------------------------------------------
+% 5. CORRECTED BIBLIOGRAPHY ENTRIES (AER format)
+% ---------------------------------------------------------------------------
+
+\begin{thebibliography}{99}
+
+% Multi-Stage Information Design Literature
+\bibitem[Ely (2017)]{ely2017beeps}
+Ely, Jeffrey C. 2017.
+``Beeps.''
+\textit{American Economic Review}, 107(1): 31--53.
+
+\bibitem[Escud{\'e} and Sinander (2023)]{escude2023slow}
+Escud{\'e}, Matteo, and Ludvig Sinander. 2023.
+``Slow Persuasion.''
+\textit{Theoretical Economics}, 18(1): 129--162.
+
+\bibitem[Renault, Solan, and Vieille (2017)]{renault2017optimal}
+Renault, J{\'e}r{\^o}me, Eilon Solan, and Nicolas Vieille. 2017.
+``Optimal Dynamic Information Provision.''
+\textit{Games and Economic Behavior}, 104: 329--349.
+
+\bibitem[Smolin (2021)]{smolin2021dynamic}
+Smolin, Alex. 2021.
+``Dynamic Evaluation Design.''
+\textit{American Economic Journal: Microeconomics}, 13(4): 300--331.
+
+% AI and Organizations Literature
+\bibitem[Acemoglu and Restrepo (2018)]{acemoglu2018race}
+Acemoglu, Daron, and Pascual Restrepo. 2018.
+``The Race between Man and Machine: Implications of Technology for Growth, Factor Shares, and Employment.''
+\textit{American Economic Review}, 108(6): 1488--1542.
+
+\bibitem[Acemoglu and Restrepo (2022)]{acemoglu2022tasks}
+Acemoglu, Daron, and Pascual Restrepo. 2022.
+``Tasks, Automation, and the Rise in US Wage Inequality.''
+\textit{Econometrica}, 90(4): 1973--2016.
+
+\bibitem[Acemoglu, Autor, Hazell, and Restrepo (2022)]{acemoglu2022ai}
+Acemoglu, Daron, David Autor, Jonathon Hazell, and Pascual Restrepo. 2022.
+``Artificial Intelligence and Jobs: Evidence from Online Vacancies.''
+\textit{Journal of Labor Economics}, 40(S1): S293--S340.
+
+\bibitem[Noy and Zhang (2023)]{noy2023experimental}
+Noy, Shakked, and Whitney Zhang. 2023.
+``Experimental Evidence on the Productivity Effects of Generative Artificial Intelligence.''
+\textit{Science}, 381(6654): 187--192.
+
+\bibitem[Peng et al. (2023)]{peng2023impact}
+Peng, Sida, Eirini Kalliamvakou, Peter Cihon, and Mert Demirer. 2023.
+``The Impact of AI on Developer Productivity: Evidence from GitHub Copilot.''
+arXiv preprint arXiv:2302.06590.
+
+% Corrected entries for previously cited papers
+\bibitem[Ide and Talamas (2025)]{ide2025ai}
+Ide, Enrique, and Eduard Talam{\`a}s. 2025.
+``Artificial Intelligence in the Knowledge Economy.''
+\textit{Journal of Political Economy}, 133(2): 3762--3800.
+
+\bibitem[Klein and Wieczorek (2026)]{klein2026forthcoming}
+Klein, Nicolas, and Thomas Wieczorek. 2026.
+``Artificial Intelligence and Organizational Structure.''
+Forthcoming, \textit{Quarterly Journal of Economics}, 141(1).
+
+\end{thebibliography}
+
+% =============================================================================
+% INSTRUCTIONS FOR INTEGRATION
+% =============================================================================
+%
+% 1. Multi-Stage Information Design subsection:
+%    - Insert as \subsection{Multi-Stage Information Design} after the existing
+%      Section 2 (Related Literature) subsection on Information Design.
+%
+% 2. AI and Organizations subsection:
+%    - Insert as \subsection{AI and Organizations} after the existing Section 3
+%      (Related Literature) subsection on Organizations.
+%
+% 3. Citation corrections in main text:
+%    - Change ``Ide and Talamas (2025)'' to note published status in JPE.
+%    - Change ``Klein and Wieczorek (2026)'' to ``forthcoming in QJE.''
+%
+% 4. Strategic Information Transmission additions:
+%    - Add citations to \citet{ely2017beeps} and \citet{renault2017optimal}
+%      in Section 8.2 (Extensions > Strategic Information Transmission).
+%
+% 5. LaTeX formatting fixes:
+%    - Search and replace ``extit{'' with ``\textit{'' in .bbl file.
+%    - Search and replace ``extitJournal'' with ``\textit{Journal}'' in .bbl file.
+%    - Search and replace ``extitPrinceton'' with ``\textit{Princeton}'' in .bbl file.
+%
+% 6. Bibliography entries:
+%    - Add the new \bibitem entries above to the thebibliography environment.
+%    - Use natbib package with author-year citations for AER format.
+% =============================================================================

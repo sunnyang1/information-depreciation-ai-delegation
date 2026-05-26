@@ -1,0 +1,192 @@
+\section{Model Setup}
+\label{sec:model}
+
+\subsection{Overview: From Capital Depreciation to Information Depreciation}
+\label{subsec:capital_to_information}
+
+The central premise of this paper is that information, like physical capital, depreciates as it flows through an organizational chain. Each processing layer---each algorithmic transformation, each forwarding step, each summarization---introduces noise, compression, and loss. The rate of this \emph{information depreciation} is not purely exogenous; it is endogenously determined by how attention is allocated across the upstream signals at each layer. Our model treats the delegation chain as a sequence of information-processing stages in which the scarce resource is attention capacity, and the central organizational problem is to design an attention architecture that maximizes the value of the final output.
+
+This framing builds on a direct analogy to capital theory. In the neoclassical growth model, capital depreciates at rate $\delta$ per period: $K_{t+1} = (1-\delta) K_t + I_t$. In our model, signal precision depreciates at rate $(1-\eta_\ell)$ per layer:
+\begin{equation}\label{eq:information_depreciation_analogy}
+\tau^{0}_{\ell+1,k} = \eta_\ell \cdot \tau^{0}_{\ell,k}, \quad \eta_\ell \in (0,1),
+\end{equation}
+where $\eta_\ell$ is the \emph{endogenous information preservation rate} at layer $\ell$. Just as the depreciation rate $\delta$ determines how much capital must be replaced to maintain productivity, $\eta_\ell$ determines how much attention must be invested at each layer to preserve signal quality. Crucially, unlike physical capital depreciation, $\eta_\ell$ is not a primitive technological constant: it is an \emph{endogenous} outcome of the attention-allocation problem, determined by the average attention per signal at layer $\ell$ through Assumption~\ref{ass:endogenous_eta} below. The optimal depth of the chain is determined by the point at which the marginal attention cost of adding another layer exceeds the marginal information gain from deeper processing.
+
+This perspective differs fundamentally from the classical principal-agent framework \`{a} la \citet{holmstrom1991multitask}. In the HM model, the agent chooses a scalar effort level $e$ that maps into output through a production function $q = f(e) + \varepsilon$. The distortion is moral hazard: the agent would prefer to set $e = 0$. In our framework, the agent chooses a vector of attention weights $\boldsymbol{\alpha} = (\alpha_1, \ldots, \alpha_K)$ subject to a budget constraint $\sum_k \alpha_k \leq A$. The distortion is information depreciation compounded by rational inattention: even if the agent fully exhausts the budget $A$, the preservation rate $\eta_\ell$ remains bounded above by $\bar{\eta} < 1$, so signals are always processed with some loss. The agent is not shirking; she faces a technological constraint---inherent algorithmic noise in LLM processing---that no amount of attention can fully overcome.
+
+This distinction has three immediate implications for the study of AI delegation chains.
+
+\textbf{First}, it provides a direct micro-foundation for the attenuation of signal quality across layers. The endogenous preservation rate $\eta_\ell$ captures, in reduced form, the algorithmic processes---tokenization, embedding projection, attention-weight normalization, and feed-forward transformations---that degrade signal fidelity in each forward pass of a transformer. Rather than treating precision as exogenous or arbitrarily layer-dependent, we derive its evolution from the attention allocation through Assumption~\ref{ass:endogenous_eta}.
+
+\textbf{Second}, it endogenizes the effective precision parameter. In the HM framework, the signal precision $\tau$ is an exogenous parameter that the principal might manipulate through incentives. In our framework, the effective precision $\tau^{*}_\ell$ at layer $\ell$ emerges from the interplay of four primitives: the base preservation parameters $(\underline{\eta}, \bar{\eta})$, the attention budget $A_\ell$, the attention technology $g_\ell(\cdot)$, and the saturation parameter $a$. The principal influences $\tau^{*}_\ell$ not by writing contracts but by designing the attention architecture---choosing the depth of the chain, the width of context windows, and the allocation of processing capacity across layers. Because $\eta_\ell$ responds to $A_\ell$, larger context windows not only process more signals but also \emph{preserve each signal better}, a double dividend that the exogenous-$\eta$ framework cannot capture.
+
+\textbf{Third}, it structures the output function as the outcome of an information-transmission technology. Equation \eqref{eq:effective_precision} below derives precision from attention allocation given depreciated signal quality. The production function is not assumed; it follows from the technology of selective attention applied to successively degraded signals.
+
+\paragraph{Relationship to Transformer Architectures.} Our notion of an ``attention budget'' $A_\ell$ is deliberately stylized. It is most directly interpretable as a simplified representation of the \emph{context-window length} of a transformer-based LLM---the maximum number of tokens that can be processed in a single forward pass (e.g., 4,096 tokens for GPT-3.5, 128,000 for GPT-4, or 1,000,000 for Gemini 1.5 Pro). However, we emphasize that this mapping is a deliberate simplification. Actual transformer attention involves \emph{soft} allocation through learned query-key-value interactions, \emph{multi-head} parallel processing, and \emph{causal masking} constraints that make the effective attention pattern highly non-linear and context-dependent. Our linear budget constraint \eqref{eq:budget_constraint} abstracts from these complexities to deliver analytical tractability. We return to this limitation in the discussion below.
+
+Our framework builds on the rational-inattention literature initiated by \citet{sims2003implications, sims2006rational} and its organizational extension by \citet{dessein2006adaptive} and \citet{dessein2016rational}. The key departure from Sims is that our agents operate in a hierarchy where the output of one agent's attention-allocation problem becomes the (depreciated) input to the next agent's problem. The key departure from Dessein--Santos is that our agents are artificial---their attention budgets, costs, and signal structures are directly measurable from API logs---which allows us to calibrate and test the model with unprecedented precision.
+
+\paragraph{Limitations and Scope Conditions.} We acknowledge two important limitations of our stylized representation. First, the linear budget constraint \eqref{eq:budget_constraint} does not capture the non-linearities of actual transformer attention, where the effective processing capacity depends on the interaction between query complexity, key dimensionality, and the attention-head structure. A more micro-founded approach would model attention through the softmax operation directly; we sacrifice this realism for analytical clarity. Second, while Assumption~\ref{ass:endogenous_eta} endogenizes the preservation rate $\eta_\ell$ through the attention budget $A_\ell$, we assume a uniform functional form across layers and signals. In practice, different types of signals (text, numerical, structured) may depreciate at different rates, and the parameters $(\underline{\eta}, \bar{\eta}, a)$ may vary with the model architecture and task complexity. Heterogeneous depreciation is discussed in Section \ref{sec:extensions}.
+
+
+\subsection{The Environment}
+\label{subsec:environment}
+
+\begin{assumption}[Hierarchy]\label{ass:hierarchy}
+There are $L+1$ layers indexed by $\ell = 0, 1, \ldots, L$. Layer $0$ is the principal (human or top-level AI) who sets the organizational architecture. Layers $\ell = 1, \ldots, L$ are AI agents arranged in a chain: the output of layer $\ell-1$ serves as the input to layer $\ell$. Layer $L$ is the final executor that produces the observable output.
+\end{assumption}
+
+\begin{assumption}[State and Signals with Information Depreciation]\label{ass:state_signals}
+The underlying state is $\omega \in \Omega \subseteq \mathbb{R}^d$, representing the correct response to a complex task (e.g., the correct answer to a coding problem, the accurate diagnosis from medical records, or the valid proof of a mathematical theorem). At each layer $\ell$, the agent receives $K_\ell$ signals $\{s_{\ell,1}, \ldots, s_{\ell,K_\ell}\}$ from the layer above. Each signal is a noisy projection of the state:
+\begin{equation}\label{eq:signal_structure}
+s_{\ell,k} = H_{\ell,k} \omega + \varepsilon_{\ell,k}, \quad \varepsilon_{\ell,k} \sim \mathcal{N}(0, \sigma_{\ell,k}^2 I),
+\end{equation}
+where $H_{\ell,k} \in \mathbb{R}^{d_k \times d}$ is a linear observation operator.
+
+The \emph{intrinsic precision} of signal $k$ at layer $\ell$ is:
+\begin{equation}\label{eq:information_depreciation}
+\tau^0_{\ell,k} = \bar{\tau}^0_k \cdot \eta_{\ell}^{\,\ell},
+\end{equation}
+where $\bar{\tau}^0_k \equiv 1/\bar{\sigma}_k^2$ is the raw precision of signal $k$ at the source (layer $0$), and $\eta_\ell \in (0,1)$ is the \emph{endogenous information preservation rate} at layer $\ell$, determined by the attention allocation as specified in Assumption~\ref{ass:endogenous_eta} below.
+\end{assumption}
+
+\begin{assumption}[Endogenous Information Depreciation]\label{ass:endogenous_eta}
+The signal preservation rate at layer $\ell$ is an increasing, concave function of the average attention per signal:
+\begin{equation}\label{eq:endogenous_eta}
+\eta_\ell = \underline{\eta} + (\bar{\eta} - \underline{\eta}) \cdot \frac{\bar{\alpha}_\ell}{\bar{\alpha}_\ell + a},
+\end{equation}
+where $\bar{\alpha}_\ell = A_\ell / K_\ell$ is the average attention per signal at layer $\ell$, $\underline{\eta} \in (0,1)$ is the minimal preservation rate (achieved when no attention is allocated), $\bar{\eta} \in (\underline{\eta}, 1)$ is the maximal preservation rate, and $a > 0$ is a saturation parameter.
+\end{assumption}
+
+The signal structure in Assumption \ref{ass:state_signals} captures the empirical reality of AI delegation chains. In a retrieval-augmented generation (RAG) pipeline, the signals are retrieved documents; in a multi-agent coding system, they are code snippets and error messages from upstream agents; in a hierarchical reasoning chain, they are intermediate conclusions. The observation operator $H_{\ell,k}$ captures the fact that each signal may reveal only a subset of the state.
+
+The information depreciation equation \eqref{eq:information_depreciation} is a core structural assumption. It posits that every layer through which a signal passes reduces its intrinsic precision by a factor $\eta_\ell < 1$ per layer. The economic rationale for $\eta_\ell < 1$ is threefold:
+\begin{enumerate}
+\item \textbf{Algorithmic noise.} Each forward pass of a transformer introduces stochasticity through dropout, layer normalization, and floating-point operations.
+\item \textbf{Compression loss.} High-dimensional signal representations are projected into lower-dimensional spaces, discarding fine-grained information.
+\item \textbf{Cumulated processing error.} Each layer's output is an imperfect summary of its inputs; these imperfections compound through the chain.
+\end{enumerate}
+
+\textbf{Micro-foundation for endogenous depreciation.} Assumption~\ref{ass:endogenous_eta} provides the central micro-foundation that endogenizes the preservation rate $\eta_\ell$. The key economic mechanism is that \emph{attention investment improves signal preservation}: allocating more attention capacity $A_\ell$ at layer $\ell$ raises the average attention per signal $\bar{\alpha}_\ell = A_\ell / K_\ell$, which in turn increases the preservation rate $\eta_\ell$. The functional form \eqref{eq:endogenous_eta} is a Michaelis--Menten (or Hill) function with three economically interpretable properties:
+\begin{enumerate}[label=(\roman*)]
+\item \textbf{Minimal preservation} ($\underline{\eta}$): Even when no attention is allocated ($A_\ell \to 0$), the preservation rate remains bounded below by $\underline{\eta} > 0$. This captures the fact that LLM forward passes have a baseline level of signal retention due to the deterministic components of the architecture (feed-forward transformations, residual connections).
+\item \textbf{Maximal preservation bounded below unity} ($\bar{\eta} < 1$): Even with infinite attention ($A_\ell \to \infty$), the preservation rate cannot exceed $\bar{\eta} < 1$. This is the critical property that addresses the reviewer's concern about why $\eta < 1$ is not merely an exogenous assumption. The bound $\bar{\eta} < 1$ reflects \emph{inherent algorithmic noise} in LLM processing: even the best-performing models, given unlimited context windows and compute, cannot perfectly preserve signal fidelity due to (a) irreversible compression in the embedding space, (b) non-invertible attention operations, and (c) fundamental limits on lossy summarization. The gap $1 - \bar{\eta}$ is the residual depreciation that no amount of attention can eliminate.
+\item \textbf{Diminishing returns to attention} (concavity): The function is concave in $\bar{\alpha}_\ell$, reflecting the intuition that the marginal improvement in signal preservation from additional attention decreases as the budget grows.
+\end{enumerate}
+
+The comparative statics of the endogenous preservation rate are immediate from differentiation of \eqref{eq:endogenous_eta}:
+\begin{equation}\label{eq:eta_comp_statics}
+\frac{\partial \eta_\ell}{\partial A_\ell} = \frac{(\bar{\eta} - \underline{\eta}) \cdot a / K_\ell}{(\bar{\alpha}_\ell + a)^2} > 0, \qquad
+\frac{\partial^2 \eta_\ell}{\partial A_\ell^2} = -\frac{2(\bar{\eta} - \underline{\eta}) \cdot a / K_\ell^2}{(\bar{\alpha}_\ell + a)^3} < 0,
+\end{equation}
+confirming that $\eta_\ell$ is increasing and concave in the attention budget. The saturation parameter $a$ controls the sensitivity of preservation to attention: when $a$ is small, preservation responds strongly to attention increases; when $a$ is large, large attention budgets are required to raise $\eta_\ell$ meaningfully above $\underline{\eta}$.
+
+The assumption that the base preservation rate is uniform across layers and signals (conditional on $\bar{\alpha}_\ell$) is a simplification; we discuss heterogeneous depreciation in Section \ref{sec:extensions}.
+
+\begin{remark}[Scalar-State Simplification]\label{rem:scalar}
+In the baseline analysis, we set $d = 1$ (scalar state) and $H_{\ell,k} = 1$ for all $\ell, k$. This simplifies the precision-aggregation technology to scalar addition: $\tau_\ell = \tau_{\ell}^{\text{prior}} + \sum_k g_\ell(\alpha_{\ell,k}) \tau^0_{\ell,k}$. The scalar assumption is restrictive when signals reveal different dimensions of a multi-faceted state. In Section \ref{sec:extensions}, we sketch how the model extends to $d > 1$ with a precision matrix; the key insight---that attention scarcity bounds depth through compounding precision loss---is preserved.
+\end{remark}
+
+\begin{assumption}[Attention Budget]\label{ass:attention_budget}
+Each agent at layer $\ell$ has a finite attention budget $A_\ell > 0$. The agent chooses attention weights $\boldsymbol{\alpha}_\ell = (\alpha_{\ell,1}, \ldots, \alpha_{\ell,K_\ell})$ satisfying
+\begin{equation}\label{eq:budget_constraint}
+\sum_{k=1}^{K_\ell} \alpha_{\ell,k} \leq A_\ell, \quad \alpha_{\ell,k} \geq 0 \; \forall k.
+\end{equation}
+The weight $\alpha_{\ell,k}$ measures the fraction of the agent's attention capacity devoted to signal $k$. If $\alpha_{\ell,k} = 0$, the signal is completely ignored.
+\end{assumption}
+
+The attention budget $A_\ell$ is the central scarce resource in our model. In transformer-based LLMs, it has three direct interpretations: (i) the context-window length; (ii) the number of attention heads; and (iii) the effective working-memory capacity. The budget constraint \eqref{eq:budget_constraint} is deliberately stylized: it captures the fundamental scarcity of processing capacity in a tractable linear form, even though actual transformer attention involves non-linear softmax interactions and multi-head parallelism. We view the linear budget as a first-order approximation that preserves the key economic insight---scarcity forces selectivity---while admitting closed-form solutions.
+
+It is important to emphasize that $A_\ell$ is not a choice variable of the agent at layer $\ell$; it is a technological parameter determined by the model architecture. The principal chooses $A_\ell$ when selecting which model to deploy at each layer. This creates a two-stage organizational design problem: the principal chooses the architecture $\{A_\ell\}_{\ell=1}^L$ and the chain depth $L$; the agents then solve their attention-allocation problems given these budgets.
+
+\begin{assumption}[Attention Technology]\label{ass:attention_technology}
+The effective precision achieved by the agent at layer $\ell$ is
+\begin{equation}\label{eq:effective_precision}
+\tau_\ell(\boldsymbol{\alpha}_\ell) = \sum_{k=1}^{K_\ell} g_\ell(\alpha_{\ell,k}) \tau^0_{\ell,k},
+\end{equation}
+where $g_\ell : \mathbb{R}_+ \to \mathbb{R}_+$ is a twice-differentiable, increasing, and concave function satisfying $g_\ell(0) = 0$, $g'_\ell(0) > 0$, and $\lim_{\alpha \to \infty} g'_\ell(\alpha) = 0$.
+\end{assumption}
+
+The function $g_\ell$ captures the attention technology: how does allocating attention weight $\alpha$ to a signal translate into effective processing precision? The concavity of $g_\ell$ reflects diminishing returns to attention. Our baseline specification uses a power function:
+\begin{equation}\label{eq:power_function}
+g_\ell(\alpha) = \alpha^\gamma, \quad \gamma \in (0,1).
+\end{equation}
+The parameter $\gamma$ is the attention elasticity of precision. When $\gamma$ is close to 1, attention is nearly linear in precision. When $\gamma$ is small, attention is highly concave. We calibrate $\gamma$ from empirical data on LLM accuracy as a function of context length in Section \ref{sec:calibration}.
+
+\begin{remark}[Robustness of the $g(\cdot)$ Specification]\label{rem:g_robustness}
+The qualitative properties of our model---the existence of an interior optimal depth, the comparative statics with respect to the preservation parameters $(\underline{\eta}, \bar{\eta})$, the attention budget $A_\ell$, and the saturation parameter $a$, and the efficiency rationales for chaining---do not depend on the power-function specification in equation \eqref{eq:power_function}. Any $g_\ell$ satisfying the regularity conditions in Assumption \ref{ass:attention_technology} yields the same first-order insights because the key economic force is the concavity of $g_\ell$ combined with the linearity of the budget constraint. The power function is chosen for analytical tractability; alternative specifications (e.g., logarithmic, $g(\alpha) = \log(1+\alpha)$; or bounded, $g(\alpha) = \alpha/(1+\alpha)$) yield similar qualitative results but less transparent closed forms. We explore the sensitivity of our results to the functional form of $g$ in Appendix \ref{app:robustness}.
+\end{remark}
+
+\begin{assumption}[Cost of Attention]\label{ass:cost}
+The cost of maintaining attention capacity $A_\ell$ at layer $\ell$ is $c_\ell(A_\ell)$, where $c_\ell : \mathbb{R}_+ \to \mathbb{R}_+$ is twice-differentiable, increasing, and convex, with $c_\ell(0) = 0$ and $c'_\ell(0) > 0$.
+\end{assumption}
+
+For our baseline analysis, we use a quadratic cost:
+\begin{equation}\label{eq:quadratic_cost}
+c_\ell(A) = \kappa_\ell A + \frac{\phi_\ell}{2} A^2,
+\end{equation}
+where $\kappa_\ell > 0$ is the marginal cost of the first unit of attention and $\phi_\ell \geq 0$ captures the convexity of compute costs at scale.
+
+\subsection{The Agent's Problem: Attention Allocation}
+\label{subsec:agent_problem}
+
+Given the environment above, the agent at layer $\ell$ solves the following optimization problem:
+\begin{equation}\label{eq:agent_problem}
+\max_{\boldsymbol{\alpha}_\ell \;:\; \eqref{eq:budget_constraint}} V_\ell\bigl(\tau_\ell(\boldsymbol{\alpha}_\ell)\bigr) - c_\ell(A_\ell),
+\end{equation}
+where $V_\ell(\tau)$ is the value of posterior precision $\tau$ for decision-making at layer $\ell$.
+
+The value function $V_\ell(\tau)$ depends on the decision problem facing the agent. In our baseline, we assume quadratic loss (normal--normal conjugate model), which yields:
+\begin{equation}\label{eq:value_function}
+V_\ell(\tau) = -\psi_\ell \, \text{Var}(\omega \mid \tau) = -\frac{\psi_\ell}{\tau},
+\end{equation}
+where $\psi_\ell > 0$ is the marginal value of accuracy. With normal signals and a normal prior, the posterior variance is $\text{Var}(\omega \mid \tau) = 1/\tau$, so $V_\ell(\tau) = -\psi_\ell/\tau$. Since $\tau$ enters negatively, maximizing $V_\ell$ is equivalent to maximizing $\tau$.
+
+More generally, $V_\ell(\tau)$ can incorporate non-quadratic payoffs, discrete actions, or strategic interactions with downstream agents. We explore these extensions in Section \ref{sec:extensions}. For the single-layer analysis in Section \ref{sec:single}, the precise functional form of $V_\ell$ matters only through its monotonicity and curvature.
+
+\subsection{Key Distinctions: Information Depreciation versus Moral Hazard}
+\label{subsec:distinctions}
+
+Before proceeding to the analysis, we pause to articulate three core distinctions between our information-depreciation framework and the Garicano--Holmstr\"{o}m--Milgrom (GHM) framework.
+
+\paragraph{Distinction 1: Information depreciation, not moral hazard, is the source of distortion.} In the HM model, agents choose costly effort $e$ to improve output quality. The distortion is moral hazard: agents prefer low effort, and incentives must be designed to induce the efficient level. In our model, distortion arises from the compounding depreciation of signal quality as information flows through the chain---at rate $(1-\eta_\ell)$ per layer---and from the binding attention constraint that forces agents to selectively process only a subset of signals. The agent is not shirking; she faces a technological constraint---the preservation bound $\bar{\eta} < 1$---that no amount of attention can fully overcome. The organizational design problem is to set the chain depth, the attention budgets, and the signal routing so that the marginal benefit of deeper processing equals the marginal cost of depreciation plus attention.
+
+\paragraph{Distinction 2: Selective processing of depreciated signals, not shirking, generates inefficiency.} In the HM model, inefficiency arises because the agent's effort is unobservable and the agent under-supplies it relative to the first-best. In our model, inefficiency arises because (i) each layer depreciates signal quality by factor $(1-\eta_\ell)$ and (ii) the agent, facing a finite budget $A_\ell$, rationally allocates attention only to the signals with highest effective precision. The ignored signals are not random; they are the ones with low post-depreciation precision, low importance for the decision, or high opportunity cost of attention. This generates testable predictions: in an LLM pipeline, we should observe that models drop low-quality retrieved documents before high-quality ones, that the dropout rate increases with chain depth (because $\eta_\ell^{\,\ell}$ shrinks the effective precision of upstream signals), and that the quality of the final output depends more on the depth--attention trade-off than on any notion of ``effort.''
+
+\paragraph{Distinction 3: Organization design as information architecture, not incentive design.} In the HM model, the principal designs incentives (wages, bonuses, monitoring) to align the agent's effort with organizational goals. In our model, the principal designs the \emph{information architecture}: which signals flow to which layers, how much context each layer receives (the attention budgets $A_\ell$), how many layers the chain contains (the depth $L$), and how the outputs of one layer feed into the next. The design variables are $\{A_\ell\}$ (attention budgets), $\{K_\ell\}$ (signal counts), $L$ (chain depth), and the routing structure---not wages or performance contracts. Our model complements the GHM framework by adding information-processing microfoundations: where GHM asks ``how should tasks and incentives be structured to motivate agents?'' we ask ``how should attention and depth be structured to preserve information quality?'' The two questions are orthogonal and jointly relevant for the design of AI delegation systems.
+
+\subsection{Summary of Notation}
+\label{subsec:notation}
+
+For reference, Table \ref{tab:notation} summarizes the key symbols used in the model.
+
+\begin{table}[htbp]
+\centering
+\caption{Notation Summary}
+\label{tab:notation}
+\begin{tabular}{@{}>{\raggedright\arraybackslash}p{2.5cm}>{\raggedright\arraybackslash}p{10cm}@{}}
+\toprule
+\textbf{Symbol} & \textbf{Definition} \\
+\midrule
+$\ell$ & Layer index, $\ell = 0, 1, \ldots, L$ \\
+$\omega$ & Underlying state (correct answer / true state) \\
+$\eta_\ell$ & Endogenous information preservation rate at layer $\ell$, $\eta_\ell \in (\underline{\eta}, \bar{\eta})$ \\
+$\underline{\eta}$ & Minimal preservation rate (no attention), $\underline{\eta} \in (0,1)$ \\
+$\bar{\eta}$ & Maximal preservation rate (unlimited attention), $\bar{\eta} \in (\underline{\eta}, 1)$ \\
+$a$ & Saturation parameter in endogenous depreciation, $a > 0$ \\
+$s_{\ell,k}$ & Signal $k$ at layer $\ell$ \\
+$K_\ell$ & Number of signals at layer $\ell$ \\
+$\bar{\tau}^0_k$ & Raw intrinsic precision of signal $k$ at source (layer $0$) \\
+$\tau^0_{\ell,k}$ & Intrinsic precision of signal $(\ell, k)$ after $\ell$ layers: $\tau^0_{\ell,k} = \bar{\tau}^0_k \cdot \eta_{\ell}^{\,\ell}$ \\
+$A_\ell$ & Attention budget at layer $\ell$ \\
+$\alpha_{\ell,k}$ & Attention weight on signal $(\ell, k)$ \\
+$g_\ell(\cdot)$ & Attention technology (precision transformation function) \\
+$\tau_\ell(\boldsymbol{\alpha}_\ell)$ & Effective precision at layer $\ell$ \\
+$\rho_\ell$ & Endogenous precision ratio (relative to the precision that would obtain under full attention, as determined by the assumed functional form $g_\ell$) \\
+$V_\ell(\tau)$ & Value of precision $\tau$ for decision-making \\
+$c_\ell(A_\ell)$ & Cost of attention capacity $A_\ell$ \\
+$\gamma$ & Attention elasticity of precision (power-function parameter) \\
+$\kappa_\ell, \phi_\ell$ & Cost parameters (linear and quadratic) \\
+\bottomrule
+\end{tabular}
+\end{table}

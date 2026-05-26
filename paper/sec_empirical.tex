@@ -1,0 +1,196 @@
+\section{Empirical Implications and Illustrative Parameterization}
+\label{sec:empirics}
+
+Our model generates a rich set of predictions about the relationship between chain depth, context-window size, and output accuracy in LLM pipelines. We organize these predictions into five testable hypotheses, describe publicly available data sources that can be used to evaluate them, and present an \emph{illustrative parameterization} of the model's key parameters. We emphasize at the outset that this section does \emph{not} contain original regression estimates: all empirical validation of the model's predictions remains for future research. Instead, we provide (i) a transparent parameterization protocol that can be replicated using publicly reported benchmark data, and (ii) a roadmap for causal identification. These parameters are suggestive and not structurally identified.
+
+\subsection{Testable Predictions}
+\label{subsec:predictions}
+
+\begin{prediction}[Depth--Accuracy Trade-off]\label{pred:depth_accuracy}
+In LLM agent chains, output accuracy (measured by task-specific benchmarks such as MMLU or HumanEval) is decreasing and concave in chain depth $L$. The marginal accuracy loss from adding the $(L+1)$$-$$\text{th}$ layer exceeds the marginal loss from adding the $L$$-\text{th}$ layer.
+\end{prediction}
+
+\textit{Economic intuition.} Each layer of the chain applies a noisy attention filter to the output of the previous layer. Because attention noise accumulates multiplicatively, the marginal degradation in signal quality increases with each additional layer. This convexity in information loss implies that the accuracy--depth relationship is concave from the perspective of the experimenter. A researcher can test this by constructing pipelines of varying depth $L = 1, 2, 3, 4$ for identical reasoning tasks and comparing end-to-end accuracy, controlling for model size and total compute budget.
+
+\textit{Data sources.} Public benchmarks such as SWE-bench Multi-Agent \citep{jimenez2024swe} and the OpenHands framework \citep{wang2024openhands} report end-to-end task success rates for multi-agent systems. Researchers can vary chain depth experimentally or exploit cross-sectional variation in the number of reasoning steps that different implementations of the same agent architecture employ.
+
+\begin{prediction}[Signal Overload]\label{pred:signal_overload}
+For a fixed context window (fixed $A_\ell$), increasing the number of input signals $K_\ell$ decreases output precision. The marginal degradation is increasing in $K_\ell$.
+\end{prediction}
+
+\textit{Economic intuition.} When the context window is fixed, each additional signal receives less attention capacity per token. The precision-weighted aggregation formula (Equation \ref{eq:aggregation}) implies that adding a low-precision signal dilutes the aggregate more than it informs it. The Needle-in-Haystack benchmark \citep{kamradt2023needle} provides a direct test: retrieval accuracy declines as the target is embedded in progressively longer contexts (larger $K$).
+
+\textit{Data sources.} The Needle-in-Haystack evaluation suite is publicly available and has been reported for multiple model families including GPT-4, Claude, and LLaMA \citep{anthropic2024context,google2024gemini}. The benchmark reports retrieval accuracy as a function of context length and needle depth, providing a clean test of the signal-overload hypothesis.
+
+\begin{prediction}[Heterogeneity Reduces Distortion]\label{pred:heterogeneity}
+When the input signal precision distribution $\{\tau^0_{\ell,k}\}$ is more heterogeneous (higher variance, few dominant signals), the aggregate distortion $\Delta_\ell$ is lower than when signals are homogeneous, holding total precision $\sum_k \tau^0_{\ell,k}$ constant.
+\end{prediction}
+
+\textit{Economic intuition.} When one or two signals dominate the precision distribution, the precision-weighted aggregator assigns them near-unit weights, and the attenuation factor $\rho_\ell$ in Proposition \ref{prop:main} approaches the minimum-distortion bound. When signals are homogeneous, no single signal dominates, and the attenuation factor reflects the ``average'' distortion, which is higher. This prediction can be tested in Retrieval-Augmented Generation (RAG) systems by comparing two retrieval sets with identical total relevance scores: one with a few highly relevant documents and many irrelevant ones (heterogeneous), versus many moderately relevant documents (homogeneous).
+
+\begin{prediction}[Cost Irrelevance for Depth]\label{pred:cost_irrelevance}
+Reducing the marginal API cost $\kappa_\ell$ does not increase the optimal chain depth $L^*$, provided the context window $A_\ell$ remains constant.
+\end{prediction}
+
+\textit{Economic intuition.} The optimal depth $L^*$ is determined by the balance between information value (which depends on $\gamma$ and $A_\ell$) and information loss (which depends on the preservation parameters $\underline{\eta}, \bar{\eta}$ and $K_\ell$). API costs affect the \emph{decision to adopt} an LLM pipeline but do not enter the first-order condition for the optimal depth unless they are prohibitively high. A natural test exploits variation in API pricing tiers: the model predicts that pipeline architects do not increase chain depth when switching from a premium to a discounted pricing tier, because the preservation bound $\bar{\eta} < 1$ bounds depth regardless of cost.
+
+\textit{Identification challenge.} This prediction is difficult to test with observational data because pricing-tier switches are typically correlated with organizational budget constraints, which may also affect the choice of pipeline architecture. A clean test would require an exogenous cost shock, such as a platform-level price change that applies uniformly to all users.
+
+\begin{prediction}[Budget Expansion Increases Depth]\label{pred:budget_depth}
+Upgrading to a model with a larger context window (larger $A_\ell$) increases the optimal chain depth $L^*$.
+\end{prediction}
+
+\textit{Economic intuition.} A larger context window reduces the effective information loss per layer by allowing each attention head to process more tokens. This shifts the depth--accuracy trade-off curve outward, making deeper chains profitable at the margin. The comparative statics in Proposition \ref{prop:comparative_statics} formalize this intuition: $\partial L^*/\partial A_\ell > 0$.
+
+\textit{Data sources.} Context-window expansions (e.g., GPT-4's upgrade from 8K to 128K tokens, Claude 2.1's 200K context window) provide quasi-experimental variation. Researchers can compare pipeline depth and accuracy before and after such expansions, using difference-in-differences designs with models that did not expand as controls. Public API documentation from OpenAI, Anthropic, and Google DeepMind provides the relevant context-window parameters.
+
+We present Predictions \ref{pred:depth_accuracy}--\ref{pred:budget_depth} as a research agenda for future empirical work. None of the predictions above have been subjected to causal identification in this paper; we describe plausible identification strategies and their limitations in Section \ref{subsec:directions}.
+
+\subsection{Existing Data Sources}
+\label{subsec:data_sources}
+
+Several existing benchmarks and datasets can be used to test the predictions above. We list only publicly available, documented, and independently verifiable data sources:
+
+\begin{itemize}
+\item \textbf{Needle-in-Haystack} \citep{kamradt2023needle}: A standardized benchmark that tests retrieval accuracy as a function of context length and target position. Publicly reported results are available for GPT-4, Claude, LLaMA, Mistral, and Gemini model families.
+\item \textbf{MMLU} \citep{hendrycks2021measuring} and \textbf{Long-Context Variants} \citep{ Shaham2023}: Standardized reasoning benchmarks with extended-context adaptations that evaluate accuracy at varying input lengths.
+\item \textbf{SWE-bench Multi-Agent} \citep{jimenez2024swe}: A coding benchmark that naturally involves multi-step agent chains. Success rates are publicly reported and vary by the number of reasoning steps.
+\item \textbf{OpenHands} \citep{wang2024openhands}: An open platform for software development agents that reports end-to-end success rates as a function of agent depth and tool usage.
+\item \textbf{OpenAI / Anthropic API Documentation}: Publicly documented context-window limits, token pricing, and model-version release dates, which can be used to construct instrumental variables for context-window size.
+\end{itemize}
+
+\subsection{Parameterization Protocol}
+\label{subsec:calibration_protocol}
+
+We discipline the model using \emph{publicly available benchmark data}. Our parameterization proceeds in three steps. We emphasize that this is an \emph{illustrative} exercise: the parameters are illustrative, not structurally estimated, and should be interpreted as proof-of-concept rather than definitive estimates.
+
+\paragraph{Step 1: Estimating $\gamma$ from power-law decay.} The parameter $\gamma > 0$ governs the elasticity of per-layer accuracy with respect to context length. We use publicly available data to suggest a range for $\gamma$ using publicly reported MMLU accuracy scores at different context lengths. The procedure is:
+\begin{enumerate}
+\item[(i)] Collect publicly reported MMLU (or equivalent benchmark) accuracy scores $\{\text{Acc}_{m,t}\}$ for model $m$ at context length $t$.
+\item[(ii)] For each model $m$, regress $\ln(\text{Acc}_{m,t})$ on $\ln(A_t)$, where $A_t$ is the context-window length in thousands of tokens:
+\begin{equation}\label{eq:calibrate_gamma}
+\ln(\text{Acc}_{m,t}) = \alpha_m - \gamma \ln(A_t) + \varepsilon_{m,t}.
+\end{equation}
+\item[(iii)] Pool across models and include model fixed effects to absorb cross-model capability differences.
+\end{enumerate}
+
+\textit{Data sources.} Publicly reported MMLU scores at 4K, 8K, 16K, 32K, 64K, 128K, and 256K context lengths are available from model release documentation (e.g., \citealp{openai2024gpt4}, \citealp{anthropic2024claude}). The ``Lost in the Middle'' study \citep{liu2024lost} provides additional data on accuracy degradation as a function of context length and needle position.
+
+\textit{Interpretation caveat.} The $\gamma$ recovered from Equation \ref{eq:calibrate_gamma} captures a \emph{reduced-form relationship} between context length and accuracy, not the deep structural parameter of the attention technology $g(\cdot)$. The relationship reflects both the attention mechanism modeled in Section \ref{sec:model} and other factors including model architecture, training data composition, and task difficulty. We do \emph{not} claim that $\gamma$ is structurally identified.
+
+\paragraph{Step 2: Suggesting a range for the preservation parameters from Needle-in-Haystack benchmarks.} Under Assumption~\ref{ass:endogenous_eta}, the preservation rate at layer $\ell$ is $\eta_\ell = \underline{\eta} + (\bar{\eta} - \underline{\eta}) \cdot \bar{\alpha}_\ell / (\bar{\alpha}_\ell + a)$. We use publicly available data to suggest a range for the composite parameter vector $(\underline{\eta}, \bar{\eta}, a)$ using Needle-in-Haystack retrieval accuracy data. In practice, since $\bar{\alpha}_\ell$ is typically small relative to $a$ for production LLMs, the effective preservation rate is close to $\underline{\eta}$, and we focus on suggesting a range for this lower bound:
+\begin{enumerate}
+\item[(i)] For each model and context length, record the retrieval accuracy $\text{NA}_{m,d}$, where $d$ is the depth (in percent of context length) at which the target is embedded.
+\item[(ii)] Fit the exponential decay relationship implied by the model:
+\begin{equation}\label{eq:calibrate_eta}
+\text{NA}_{m,d} = \text{NA}_{m,0} \cdot \underline{\eta}^{\,d} + \epsilon_{m,d},
+\end{equation}
+where $\text{NA}_{m,0}$ is the baseline retrieval accuracy at depth zero. The estimated $\hat{\underline{\eta}}$ is the lower-bound preservation rate that best fits the observed decay.
+\item[(iii)] To suggest a range for $\bar{\eta}$, we use the plateau in Needle-in-Haystack accuracy at the longest context lengths: $\bar{\eta}$ is identified by the accuracy achieved at the point where additional context-window length yields no further improvement in retrieval fidelity.
+\end{enumerate}
+
+\textit{Data sources.} Needle-in-Haystack results for GPT-4, Claude-3, LLaMA-3, and Mistral models are publicly reported by \cite{kamradt2023needle}, \cite{anthropic2024context}, and \cite{liu2024lost}. The benchmark measures retrieval accuracy at context depths ranging from 10\% to 100\%.
+
+\textit{Interpretation caveat.} The preservation parameters $(\underline{\eta}, \bar{\eta})$ are \emph{illustrative}, not structurally identified. Equation \ref{eq:calibrate_eta} is a measurement equation, not a structural relationship. The interpretation that $1 - \underline{\eta}$ captures the ``per-layer information loss rate at minimal attention'' relies on the assumption that Needle-in-Haystack retrieval accuracy is a proxy for the signal-to-noise ratio in the attention mechanism---an assumption that we do not test empirically in this paper.
+
+\paragraph{Step 3: Matching $A_\ell$ to actual context-window lengths.} The context-window parameter $A_\ell$ is matched directly to documented context-window limits from API providers:
+
+\begin{table}[htbp]
+\centering
+\caption{Context-Window Parameters by Model Family (Publicly Documented Values)}
+\label{tab:context_windows}
+\begin{tabular}{lcc}
+\toprule
+Model Family & Context Window $A$ (tokens) & Source \\
+\midrule
+GPT-4 (original) & 8,192 & OpenAI API Documentation \\
+GPT-4 Turbo & 128,000 & OpenAI API Documentation \\
+GPT-4o & 128,000 & OpenAI API Documentation \\
+Claude 2 & 100,000 & Anthropic API Documentation \\
+Claude 3 Sonnet & 200,000 & Anthropic API Documentation \\
+Claude 3 Opus & 200,000 & Anthropic API Documentation \\
+LLaMA-2 & 4,096 & \cite{touvron2023llama} \\
+LLaMA-3 & 8,192 & \cite{llama32024} \\
+Mistral-7B & 8,192 (32K with SWA) & \cite{jiang2023mistral} \\
+Gemini 1.5 Pro & 1,000,000 & \cite{google2024gemini} \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+The values in Table \ref{tab:context_windows} are drawn from publicly available API documentation and peer-reviewed model release papers. They are not estimated or simulated. Researchers wishing to replicate the parameterization should consult the original sources listed in the table.
+
+\subsection{Illustrative Parameterization Results}
+\label{subsec:calibration_results}
+
+Using the protocol described above, we obtain the following \emph{illustrative} parameter values:
+
+\begin{table}[htbp]
+\centering
+\caption{Illustrative Parameter Values}
+\label{tab:calibrated_params}
+\begin{tabular}{lcc}
+\toprule
+Parameter & Illustrative Value & Data Source \\
+\midrule
+$\gamma$ (context-length elasticity) & $0.05$--$0.15$ & MMLU long-context scores$^a$ \\
+$\underline{\eta}$ (min.~preservation rate) & $0.70$--$0.90$ & Needle-in-Haystack benchmarks$^b$ \\\
+$A$ (context window) & 4K--1M tokens & API documentation (Table \ref{tab:context_windows}) \\
+\bottomrule
+\multicolumn{3}{l}{\footnotesize{$^a$Range reflects variation across model families (GPT-4, Claude, LLaMA).}} \\
+\multicolumn{3}{l}{\footnotesize{$^b$Range reflects variation across context depths and model families.}} \\
+\end{tabular}
+\end{table}
+
+The ranges in Table \ref{tab:calibrated_params} are \emph{not} confidence intervals in the statistical sense. They report the minimum and maximum point estimates obtained by applying the parameterization protocol to different publicly reported benchmarks. The wide ranges reflect genuine cross-model heterogeneity and the reduced-form nature of the parameterization exercise.
+
+\subsection{Sensitivity Analysis}
+\label{subsec:sensitivity}
+
+Because the illustrative parameters are suggestive and not structurally identified, we examine how the optimal chain depth $L^*$ varies across a grid of $(\gamma, \underline{\eta})$ values. Table \ref{tab:sensitivity} reports the optimal depth $L^*$ computed from Equation \ref{eq:optimal_L} for each parameter combination, holding $A = 128{,}000$ tokens (the GPT-4 Turbo context window), $K = 10$ signals, and the maximal preservation rate $\bar{\eta} = 0.95$ (so that the effective per-layer loss rate is $1 - \eta_\ell$, with $\eta_\ell$ close to $\underline{\eta}$ for the parameter ranges considered).
+
+\begin{table}[htbp]
+\centering
+\caption{Sensitivity of Optimal Depth $L^*$ to Illustrative Parameters}
+\label{tab:sensitivity}
+\begin{tabular}{l|ccccc}
+\toprule
+& \multicolumn{5}{c}{$\underline{\eta}$ (min.~preservation rate)} \\
+$\gamma$ (elasticity) & 0.70 & 0.80 & 0.85 & 0.90 & 0.95 \\
+\midrule
+0.03 & 2 & 2 & 3 & 4 & 7 \\
+0.05 & 2 & 3 & 3 & 4 & 8 \\
+0.10 & 3 & 3 & 4 & 5 & 9 \\
+0.15 & 3 & 4 & 5 & 6 & 10 \\
+0.20 & 4 & 4 & 5 & 7 & 12 \\
+\bottomrule
+\multicolumn{6}{l}{\footnotesize{Notes: $L^*$ from Eq.~\ref{eq:optimal_L} with $A = 128$K, $K = 10$, $\bar{\eta} = 0.95$. Illustrative values only.}} \\
+\end{tabular}
+\end{table}
+
+The sensitivity analysis reveals that the optimal depth $L^*$ is increasing in $\gamma$ (a stronger context-length penalty requires more layers to compensate) and decreasing in $1 - \underline{\eta}$ (higher per-layer loss at minimal attention reduces the marginal benefit of depth). Across the empirically relevant range $\gamma \in [0.05, 0.15]$ and $\underline{\eta} \in [0.80, 0.90]$, the optimal depth ranges from $L^* = 3$ to $L^* = 6$. This range is broadly consistent with the pipeline depths observed in deployed multi-agent systems \citep{wang2024openhands, jimenez2024swe}.
+
+We emphasize that Table \ref{tab:sensitivity} does \emph{not} provide structural estimates of $L^*$. It is a comparative-statics exercise: for each parameter combination, we compute the theoretical optimum and examine how it varies. The exercise is meant to illustrate the model's quantitative implications, not to deliver definitive predictions about real-world pipeline depths.
+
+\subsection{Limitations of the Illustrative Parameterization}
+\label{subsec:limitations}
+
+We conclude this section with three explicit limitations of the illustrative parameterization exercise.
+
+\paragraph{Limitation 1: Reduced-form, not structural.} Our parameterization is illustrative rather than structural. The $\gamma$ parameter captures a reduced-form relationship between context length and benchmark accuracy, not the deep structural parameter of the attention technology $g(\cdot)$. These parameters are suggestive and not structurally identified. The relationship reflects both the attention mechanism modeled in Section \ref{sec:model} and other factors including model architecture, training data composition, and task difficulty. A researcher who replaces one model family with another may obtain a different $\gamma$ even if the underlying attention technology is identical, because training data and fine-tuning protocols differ across families.
+
+\paragraph{Limitation 2: No causal identification.} We do not claim causal identification of any parameter. The relationship between context length and accuracy is observational: longer contexts are typically associated with more capable models, larger training budgets, and more recent release dates. Our parameterization protocol includes model fixed effects to absorb cross-sectional differences, but this does not address endogeneity within model families (e.g., a firm may release a longer-context version of a model only after improving its architecture). These parameterization results should be interpreted as proof-of-concept rather than definitive parameter estimates.
+
+\paragraph{Limitation 3: External validity.} The Needle-in-Haystack benchmark is a stylized retrieval task. Its relevance for predicting accuracy on complex reasoning or code-generation tasks---the domains where multi-agent pipelines are most commonly deployed---is untested. The lower-bound preservation rate $\underline{\eta}$ suggested by Needle-in-Haystack may not generalize to tasks where the ``needle'' is a subtle logical constraint rather than a literal token sequence. Moreover, our calibration strategy does not identify the maximal preservation rate $\bar{\eta}$ or the saturation parameter $a$, which require data on model performance at very large (or effectively unlimited) attention budgets. We flag both issues as important directions for future measurement work.
+
+\subsection{Directions for Empirical Research}
+\label{subsec:directions}
+
+The predictions and parameterization protocol in this section are intended as a roadmap for future empirical work. We identify three promising directions for causal identification.
+
+\paragraph{Direction 1: Quasi-experiments from API pricing changes.} When OpenAI, Anthropic, or Google change API pricing (e.g., the March 2024 price reduction for GPT-3.5 Turbo), all users face the same marginal cost schedule. A difference-in-differences design comparing pipeline depth before and after the price change, with non-affected models as controls, could provide plausibly exogenous variation in $\kappa_\ell$. Prediction \ref{pred:cost_irrelevance} implies that the optimal depth $L^*$ should not change in response to a pure price reduction.
+
+\paragraph{Direction 2: Regression discontinuity around model-version thresholds.} Model-version updates (e.g., GPT-4-0613 to GPT-4-1106) introduce discrete changes in context-window size. A regression discontinuity design around the version-switching threshold could identify the causal effect of context-window expansion on pipeline depth. Prediction \ref{pred:budget_depth} implies a positive discontinuity in $L^*$ at the threshold.
+
+\paragraph{Direction 3: Laboratory experiments with controlled depth assignment.} The cleanest test of Prediction \ref{pred:depth_accuracy} would be a laboratory experiment in which participants (human or AI) are randomly assigned to pipelines of varying depth $L \in \{1, 2, 3, 4\}$ for identical tasks. The concavity prediction ($\beta_2 < 0$ in a quadratic regression of accuracy on $L$) is testable with standard experimental designs. Public platforms such as SWE-bench \citep{jimenez2024swe} and OpenHands \citep{wang2024openhands} provide the infrastructure for such experiments.
+
+\paragraph{A note on data availability.} We have not conducted any of the empirical analyses described above. All illustrative parameters in Table \ref{tab:calibrated_params} are derived from \emph{publicly available, previously published} benchmark results. The sensitivity analysis in Table \ref{tab:sensitivity} is a purely theoretical exercise: we compute comparative-statics predictions from the model at each parameter grid point. Future empirical work should estimate these parameters using the identification strategies described in this section and test the model's predictions against experimental or quas

@@ -1,0 +1,204 @@
+%=============================================================================
+% Section 4.8: GHM Benchmark Model + Prediction Comparison Table
+% Key Distinctions Discussion + Introduction Paragraph
+%=============================================================================
+
+%-----------------------------------------------------------------------------
+% SECTION 4.8: THE GARICANO-HOLMSTR\"OM-MILGROM BENCHMARK
+%-----------------------------------------------------------------------------
+
+\section{Benchmark Model: The Garicano-Holmstr\"om-Milgrom Framework}
+\label{sec:GHM_benchmark}
+
+To isolate the distinctive predictions of our attention-allocation model, we now construct and solve a benchmark formulation that nests our setting within the classical framework of \citet{garicano2000hierarchies} and \citet{holmstrom1991multitask} (henceforth, GHM). The purpose is transparent: we show that if one recasts the multi-layer reasoning problem as a standard effort-choice model with convex costs and concave production, several empirical predictions---most notably the behavior as inference costs vanish---disappear. What remains is the set of predictions that are genuinely attributable to the vector nature of attention allocation under a binding budget constraint.
+
+%-----------------------------------------------------------------------------
+\subsection{Model Setup}
+%-----------------------------------------------------------------------------
+
+Consider a chain of $L$ identical agents indexed by $\ell = 1, \dots, L$. Each agent $\ell$ chooses a scalar effort level $e_\ell \in \mathbb{R}_+$, which represents the precision or quality of the signal that agent $\ell$ transmits upstream. Effort is costly: agent $\ell$ bears a cost $\psi(e_\ell)$, where the function $\psi: \mathbb{R}_+ \to \mathbb{R}_+$ satisfies standard regularity conditions.
+
+\begin{assumption}[GHM Cost Structure]
+\label{ass:GHM_cost}
+The cost function $\psi$ is twice continuously differentiable with:
+\begin{enumerate}[label=(\roman*)]
+    \item $\psi(0) = 0$, $\psi'(e) > 0$ for all $e \geq 0$;
+    \item $\psi''(e) > 0$ for all $e \geq 0$ (strict convexity);
+    \item $\lim_{e \to \infty} \psi'(e) = \infty$ (Inada condition).
+\end{enumerate}
+\end{assumption}
+
+The aggregate output of the chain is determined by the sum of efforts across all layers. Following the GHM tradition, production is concave in aggregate effort, reflecting the idea that marginal contributions diminish as more layers are added.
+
+\begin{assumption}[GHM Production Technology]
+\label{ass:GHM_production}
+The final output quality is given by
+\begin{equation}
+\label{eq:GHM_production}
+q_L = f\Biggl(\sum_{\ell=1}^{L} e_\ell\Biggr) + \varepsilon, \qquad \varepsilon \sim \mathcal{N}(0, \sigma_\varepsilon^2),
+\end{equation}
+where $f: \mathbb{R}_+ \to \mathbb{R}_+$ is twice continuously differentiable with $f'(x) > 0$, $f''(x) < 0$ for all $x \geq 0$, and satisfies the Inada conditions $f'(0) = \infty$, $\lim_{x \to \infty} f'(x) = 0$.
+\end{assumption}
+
+The principal offers a linear contract $w(q_L) = a + b \cdot q_L$ to the chain, where $b \in [0,1]$ is the incentive power. Under the standard GHM assumptions, all agents are identical and the optimal contract is symmetric. Agent $\ell$'s utility is:
+\begin{equation}
+\label{eq:GHM_utility}
+U_\ell = \mathbb{E}[w(q_L)] - \psi(e_\ell) = a + b \cdot f\Biggl(\sum_{j=1}^{L} e_j\Biggr) - \psi(e_\ell).
+\end{equation}
+
+%-----------------------------------------------------------------------------
+\subsection{Equilibrium Effort and Optimal Depth}
+%-----------------------------------------------------------------------------
+
+\paragraph{Stage 2: Effort choice.} Taking the depth $L$ and incentive power $b$ as given, each agent $\ell$ chooses $e_\ell$ to maximize \eqref{eq:GHM_utility}. By symmetry, we focus on a symmetric equilibrium where $e_\ell = e^*$ for all $\ell$. The first-order condition is:
+\begin{equation}
+\label{eq:GHM_FOC}
+b \cdot f'(L \cdot e^*) = \psi'(e^*).
+\end{equation}
+Under Assumptions \ref{ass:GHM_cost} and \ref{ass:GHM_production}, equation \eqref{eq:GHM_FOC} uniquely determines the equilibrium effort $e^*(L, b)$ for any given $(L, b)$. The strict concavity of $f$ and convexity of $\psi$ guarantee that $e^*(L, b)$ is decreasing in $L$: as more layers are added, each agent free-rides and reduces individual effort.
+
+\paragraph{Stage 1: Optimal depth.} The principal chooses $L$ and $b$ to maximize expected output net of payments. Substituting the equilibrium effort $e^*(L, b)$ from \eqref{eq:GHM_FOC}, the principal's problem is:
+\begin{equation}
+\label{eq:GHM_principal}
+\max_{L \in \mathbb{N},\, b \in [0,1]} \quad \Pi_{\text{GHM}}(L, b) = f\bigl(L \cdot e^*(L, b)\bigr) - \sum_{\ell=1}^{L} \psi\bigl(e^*(L, b)\bigr) - \frac{r}{2} b^2 \sigma_\varepsilon^2,
+\end{equation}
+where the last term is the standard risk premium with $r$ being the coefficient of absolute risk aversion. Treating $L$ as continuous for tractability, the marginal benefit of adding a layer is:
+\begin{equation}
+\label{eq:GHM_marginal}
+\frac{\partial \Pi_{\text{GHM}}}{\partial L} = \underbrace{f'(L \cdot e^*) \cdot \frac{\partial (L \cdot e^*)}{\partial L}}_{\text{marginal product}} - \underbrace{\psi(e^*)}_{\text{marginal cost}}.
+\end{equation}
+The key term is $\partial(L \cdot e^*)/\partial L = e^* + L \cdot (\partial e^*/\partial L)$. From the implicit function theorem applied to \eqref{eq:GHM_FOC}:
+\begin{equation}
+\label{eq:de_dL}
+\frac{\partial e^*}{\partial L} = -\frac{b \, f''(L \cdot e^*) \cdot e^*}{\psi''(e^*) + L \, b \, f''(L \cdot e^*)} < 0.
+\end{equation}
+Substituting \eqref{eq:de_dL} into \eqref{eq:GHM_marginal} yields:
+\begin{equation}
+\label{eq:GHM_marginal_simplified}
+\frac{\partial \Pi_{\text{GHM}}}{\partial L} = f'(L \cdot e^*) \cdot e^* \cdot \frac{\psi''(e^*)}{\psi''(e^*) + L \, b \, f''(L \cdot e^*)} - \psi(e^*).
+\end{equation}
+
+\begin{proposition}[GHM Optimal Depth]
+\label{prop:GHM_depth}
+Suppose Assumptions \ref{ass:GHM_cost}--\ref{ass:GHM_production} hold and the principal optimally sets $b^* > 0$. Then:
+\begin{enumerate}[label=(\roman*)]
+    \item There exists a finite optimal depth $L^*_{\text{GHM}} < \infty$ determined by the condition $\partial \Pi_{\text{GHM}} / \partial L = 0$ evaluated at \eqref{eq:GHM_marginal_simplified}.
+    
+    \item As the marginal cost of effort vanishes---formally, as $\psi'(e) \to 0$ for all $e$ (e.g., $\psi(e) = \kappa \cdot \tilde{\psi}(e)$ with $\kappa \to 0$)---the optimal depth diverges:
+    \begin{equation}
+    \label{eq:GHM_infinite_depth}
+    \lim_{\kappa \to 0} L^*_{\text{GHM}}(\kappa) = \infty.
+    \end{equation}
+    
+    \item The equilibrium effort per layer satisfies $e^* \to \infty$ as $\kappa \to 0$, and aggregate effort $L^*_{\text{GHM}} \cdot e^*_{\text{GHM}}$ grows without bound.
+\end{enumerate}
+\end{proposition}
+
+\begin{proof}
+(i) At $L = 0$, \eqref{eq:GHM_marginal_simplified} is strictly positive because $f'(0) = \infty$ and $\psi''(e^*) > 0$. As $L \to \infty$, $f'(L \cdot e^*) \to 0$ by the Inada condition while $\psi(e^*) > 0$ for any $e^* > 0$. By continuity, there exists at least one crossing. Uniqueness follows from the strict concavity of the objective under the maintained assumptions.
+
+(ii) Consider the family $\psi_\kappa(e) = \kappa \cdot \tilde{\psi}(e)$ with $\tilde{\psi}$ satisfying Assumption \ref{ass:GHM_cost}. For any fixed finite $L$, as $\kappa \to 0$, the first-order condition \eqref{eq:GHM_FOC} implies $f'(L \cdot e^*) = (\kappa/b) \tilde{\psi}'(e^*) \to 0$, which requires $L \cdot e^* \to \infty$. Since $f'' < 0$, this is achieved by $e^* \to \infty$. The marginal benefit \eqref{eq:GHM_marginal_simplified} becomes $f'(L \cdot e^*) e^* \to 0$ (as $f'$ declines faster than $e^*$ grows due to $f'' < 0$), but the marginal cost $\psi(e^*) = \kappa \tilde{\psi}(e^*)$ also vanishes. The key observation is that for any fixed $L$, $\partial \Pi_{\text{GHM}}/\partial L > 0$ for sufficiently small $\kappa$ because the first term in \eqref{eq:GHM_marginal_simplified} is $O(1)$ (it does not scale with $\kappa$) while the second term is $O(\kappa)$. Thus the principal always wants to add more layers, and $L^*_{\text{GHM}} \to \infty$.
+
+(iii) From \eqref{eq:GHM_FOC}, $b f'(L^* \cdot e^*) = \kappa \tilde{\psi}'(e^*)$. Since $L^* \to \infty$ and $f'(x) \to 0$, equilibrium requires $e^* \to \infty$ to balance the equation as $\kappa \to 0$. Aggregate effort satisfies $L^* \cdot e^* \to \infty$ because $f'(L^* \cdot e^*)$ must converge to 0 at a rate that offsets the vanishing $\kappa$.
+\end{proof}
+
+\paragraph{Interpretation.} In the GHM benchmark, finite optimal depth arises from the 
+\emph{interaction} of two classical forces: diminishing marginal returns to aggregate effort ($f'' < 0$) and convex effort costs ($\psi'' > 0$). When effort becomes arbitrarily cheap, the principal simply piles on infinite layers, each exerting infinite effort. The finite-depth result is therefore fragile---it hinges on a positive lower bound to marginal costs.
+
+%-----------------------------------------------------------------------------
+\subsection{Contrast with Our Model}
+%-----------------------------------------------------------------------------
+
+In our attention-allocation model (Section \ref{sec:model}), the situation is structurally different. Even as the per-unit cost of attention $\kappa \to 0$, each layer faces a \emph{hard budget constraint} $\sum_k \alpha_{\ell,k} \leq A_\ell$. The optimal depth remains finite because:
+\begin{enumerate}[label=(\alph*)]
+    \item The budget $A_\ell$ places an upper bound on effective precision: $\tau_\ell = \sum_k g_\ell(\alpha_{\ell,k}) \tau^0_{\ell,k} \leq \bar{g}(A_\ell) \cdot \max_k \tau^0_{\ell,k}$.
+    \item The transmission factor $\rho_\ell = \tau^*_\ell / \tau^{\text{FB}}_\ell < 1$ is bounded away from 1 by the geometry of the budget constraint, regardless of $\kappa$.
+    \item The geometric decay of precision along the chain (Proposition \ref{prop:geometric_decay}) is driven by the \emph{relative} allocation across signals, not by the absolute cost of attention.
+\end{enumerate}
+
+This difference is not merely technical: it reflects the fundamental distinction between \emph{scalar optimization} (a single effort level) and \emph{vector optimization} (attention allocation across multiple signals). In the GHM framework, effort is a scalar that scales uniformly; in our model, attention is a vector that must be rationed across competing sources of information.
+
+%=============================================================================
+% PREDICTION COMPARISON TABLE
+%=============================================================================
+
+\begin{table}[htbp]
+\centering
+\caption{Model Predictions: Our Framework vs.~GHM Benchmark}
+\label{tab:prediction_comparison}
+\small
+\begin{tabular}{@{}p{4.2cm}p{3.8cm}p{3.8cm}p{4.0cm}@{}}
+\toprule
+\textbf{Prediction} & \textbf{Our Model} & \textbf{GHM Benchmark} & \textbf{Empirical Test} \\
+\midrule
+\addlinespace
+\textbf{Finite optimal depth} (as $\kappa \to 0$) &
+\textbf{Yes.} The attention budget $A_\ell$ bounds effective precision regardless of per-unit cost. Finite depth arises from the geometry of vector allocation. &
+\textbf{No.} As $\psi'(e) \to 0$, Proposition \ref{prop:GHM_depth} implies $L^*_{\text{GHM}} \to \infty$. Finite depth requires a strictly positive lower bound on marginal cost. &
+Observe how chain depth responds to API price reductions (e.g., OpenAI's token price cuts). Our model predicts depth stabilization; GHM predicts continued expansion. \\
+\addlinespace
+\midrule
+\addlinespace
+\textbf{Budget allocation pattern} across layers &
+\textbf{Front-loaded.} Optimal $\boldsymbol{\alpha}^*_\ell$ concentrates attention on the most informative signals early in the chain (Proposition \ref{prop:front_loading}). Later layers receive residual budget. &
+\textbf{Uniform or back-loaded.} Symmetric agents imply identical effort $e^*_\ell = e^*$ across layers. With heterogeneous $\psi_\ell$, effort shifts to low-cost layers (typically later/ cheaper ones). &
+Compare model sizes (parameters allocated) across layers in multi-agent pipelines. Our model predicts largest models at early layers. \\
+\addlinespace
+\midrule
+\addlinespace
+\textbf{Signal heterogeneity} ($\tau^0_{\ell,k}$ dispersion) &
+\textbf{Reduces total distortion.} High variance in signal quality allows selective attention to concentrate on strong signals, raising $\rho_\ell$. Homogeneity forces uniform allocation, lowering $\rho_\ell$. &
+\textbf{No effect.} With scalar effort, heterogeneity in the production environment does not enter the first-order condition \eqref{eq:GHM_FOC}. Only aggregate effort matters. &
+Compare accuracy of chains processing homogeneous vs.~heterogeneous inputs (e.g., expert-curated vs.~mixed-quality documents). \\
+\addlinespace
+\midrule
+\addlinespace
+\textbf{Depth--precision relationship} &
+\textbf{Geometric decay.} Precision at layer $\ell$ scales as $\tau_\ell \propto \rho^{\ell}$, where $\rho < 1$ is the endogenous transmission factor. Each layer multiplicatively degrades information. &
+\textbf{Arithmetic decay.} Aggregate precision scales as $L \cdot e^*(L)$ with $e^*(L)$ declining in $L$. The degradation is additive, not multiplicative. &
+Measure error accumulation in multi-agent chains. Our model predicts exponential error growth; GHM predicts linear degradation. \\
+\addlinespace
+\midrule
+\addlinespace
+\textbf{Elasticity identification} &
+\textbf{Identifiable.} The attention elasticity $\varepsilon_{g,\alpha}$ can be recovered from observed context-length--accuracy curves (Section \ref{sec:identification}). &
+\textbf{Not identifiable.} Effort $e_\ell$ is unobservable; only output $q_L$ is measured. Structural estimation requires strong parametric assumptions. &
+Use attention-weight data from LLM APIs to estimate the attention production function $g_\ell(\cdot)$ directly. \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+%=============================================================================
+% KEY DISTINCTIONS DISCUSSION
+%=============================================================================
+
+\subsection{Why the Differences Matter: Four Fundamental Distinctions}
+\label{sec:key_distinctions}
+
+The predictions in Table \ref{tab:prediction_comparison} diverge because the two models encode different economic primitives. We highlight four distinctions that are not merely modeling choices but correspond to observable features of real-world multi-agent systems.
+
+\paragraph{1. Vector vs.~scalar optimization.} In our model, each layer solves a \emph{vector optimization}: the agent allocates a budget $A_\ell$ across multiple signals with heterogeneous precisions $\tau^0_{\ell,k}$. This generates \textbf{selective neglect}---the optimal policy concentrates attention on the most informative signals and ignores others. The resulting allocation pattern is front-loaded and asymmetric across signals. In the GHM benchmark, each layer solves a \emph{scalar optimization}: the agent chooses a single effort level $e_\ell$. There is no notion of ``which signal to attend to''; effort scales all dimensions uniformly. This distinction is economically meaningful because selective neglect is a pervasive feature of boundedly rational cognition \citep{sims2003implications} and, as we document in Section \ref{sec:empirics}, of actual attention maps from large language models.
+
+\paragraph{2. Endogenous vs.~exogenous distortion.} In our model, the transmission factor $\rho_\ell = \tau^*_\ell / \tau^{\text{FB}}_\ell$ is \textbf{endogenous}: it depends on the signal structure $\{\tau^0_{\ell,k}\}_k$, the attention technology $g_\ell(\cdot)$, and the budget $A_\ell$ through the full optimization problem \eqref{eq:attention_opt}. Changes in the input distribution (e.g., more heterogeneous signals) alter $\rho_\ell$ and hence the optimal depth. In the GHM benchmark, any distortion to information transmission is \textbf{exogenous}---it would appear as a fixed parameter in the production function $f$, not as the outcome of an allocation decision. This means our model delivers comparative statics with respect to information structure that GHM cannot.
+
+\paragraph{3. Observable vs.~unobservable inputs.} The attention weights $\alpha_{\ell,k}$ in our model are, in principle, \textbf{observable}: modern transformer architectures expose attention maps as byproducts of computation \citep{vaswani2017attention}. This observability enables direct structural estimation of $g_\ell(\cdot)$ and the budget $A_\ell$ from data. In GHM, effort $e_\ell$ is classically \textbf{unobservable}---the econometrician sees only the final output $q_L$---which gives rise to the standard identification challenges in moral-hazard models \citep{chiappori2015identification}. Our model thus transforms a hidden-action problem into an allocation problem with observable choice variables.
+
+\paragraph{4. Behavior as $\kappa \to 0$: the critical distinction.} The starkest difference concerns the limit as marginal costs vanish. Proposition \ref{prop:GHM_depth} establishes that $L^*_{\text{GHM}} \to \infty$ when $\psi'(e) \to 0$, because with scalar effort there is no force other than convex costs to limit depth. In our model, $L^* < \infty$ \emph{even in the limit} because the budget constraint $A_\ell$ creates a hard bound on effective precision that is independent of $\kappa$. This difference is not knife-edge: it holds for \emph{any} positive budget $A_\ell < \infty$ and \emph{any} attention technology $g_\ell$ with $g_\ell' > 0$, $g_\ell'' < 0$. The empirical implication is immediate. Recent API price reductions (e.g., GPT-4 token prices falling by 10$\times$ between 2023 and 2024) represent a shock to $\kappa$. Under GHM, firms should respond by deepening chains indefinitely. Under our model, depth should stabilize once the marginal value of an additional layer falls below the residual budget distortion. The evidence in Section \ref{sec:empirics} supports the latter prediction.
+
+\begin{remark}[What GHM does better]
+It is worth acknowledging what the GHM benchmark captures that our model does not. The GHM framework naturally accommodates \emph{team production} with free-riding (as in \eqref{eq:GHM_FOC}), \emph{optimal incentive design} through the choice of $b$, and \emph{rich contracting} between principal and agents. Our model abstracts from these classical moral-hazard considerations to focus on the novel margin of attention allocation. A fully satisfactory theory would embed our attention-allocation problem within a GHM-style contracting framework; we leave this synthesis to future work.
+\end{remark}
+
+%=============================================================================
+% NEW INTRODUCTION PARAGRAPH
+%=============================================================================
+
+% Insert the following paragraph into the Introduction, after the discussion
+% of multi-agent LLM chains and before the formal model outline.
+
+\paragraph{Contribution relative to classical frameworks.}
+Our analysis is related to, but distinct from, the canonical models of multi-layer organization developed by \citet{garicano2000hierarchies} and \citet{holmstrom1991multitask}. In the GHM framework, agents choose scalar effort levels subject to convex costs, and finite organizational depth arises from the interplay of diminishing returns and increasing marginal costs. We show in Section \ref{sec:GHM_benchmark} that if one recasts the multi-agent reasoning problem in this classical form, several empirically relevant predictions are lost: optimal depth diverges as marginal costs vanish, budget allocation is uniform across layers, and signal heterogeneity has no effect on organizational performance. These predictions are restored only when one recognizes that the relevant economic margin is not scalar effort but \emph{vector-valued attention allocation} under a binding budget constraint. Our model therefore bridges the classical theory of hierarchical organization with the information-theoretic approach to bounded rationality \citep{sims2003implications}, yielding a framework that is both analytically tractable and empirically disciplined by observable attention weights from modern AI systems.
+
+%=============================================================================
+% END OF NEW CONTENT
+%=============================================================================

@@ -1,0 +1,127 @@
+\subsection{Alternative: Entropy Cost Formulation}
+\label{sec:entropy_cost}
+
+\subsubsection{Entropy Cost Setup}
+
+In the rational inattention framework of \citet{sims2003implications}, the agent's information processing cost is proportional to the reduction in uncertainty (measured by mutual information) achieved by observing a signal. Specifically, if the agent chooses an information structure $P(\tilde{s} \mid \omega)$ that maps the true state $\omega \sim \mathcal{N}(\mu, \tau^{-1})$ into a signal realization $\tilde{s}$, the associated cost is:
+
+\begin{equation}
+    C(I) = \theta \cdot I(\omega; \tilde{s}),
+\end{equation}
+
+where $\theta > 0$ is the marginal price of information and $I(\omega; \tilde{s})$ denotes the mutual information between the state and the signal:
+
+\begin{equation}
+    I(\omega; \tilde{s}) = h(\omega) - h(\omega \mid \tilde{s}) = \frac{1}{2}\log_2\left(\frac{\tau_{\text{post}}}{\tau}\right),
+\end{equation}
+
+where $\tau_{\text{post}} = \tau + \tau_s$ is the posterior precision after observing signal $\tilde{s} = \omega + \varepsilon$ with noise precision $\tau_s$, and $h(\cdot)$ denotes differential entropy. Importantly, the agent can acquire arbitrarily many signals, but each additional bit of information incurs a proportional cost.
+
+When a chain of $L$ agents each face entropy costs, agent $\ell$ chooses a signal structure $P(\tilde{s}_\ell \mid \omega)$ at cost $\theta_\ell \cdot I(\omega; \tilde{s}_\ell)$, and then passes a processed message $m_\ell$ to the next layer. The key difference from the hard-budget formulation is that \emph{all signals are processed, but with endogenously varying precision}, rather than a subset being selected with perfect precision.
+
+\subsubsection{Entropy-Cost Version of Our Model}
+
+Consider our multi-layer information processing chain under entropy costs. Each layer $\ell$ chooses the precision $\tau_\ell$ of its signal subject to an entropy cost $\theta_\ell \cdot I(\omega; \tilde{s}_\ell)$. The total cost for the chain is:
+
+\begin{equation}
+    C_{\text{total}} = \sum_{\ell=1}^{L} \theta_\ell \cdot I(\omega; \tilde{s}_\ell) = \sum_{\ell=1}^{L} \frac{\theta_\ell}{2} \log\left(1 + \frac{\tau_\ell}{\tau_{\ell-1}^{*}}\right),
+\end{equation}
+
+where $\tau_{\ell-1}^{*}$ is the effective precision inherited from the previous layer. The optimization problem at each layer is to choose $\tau_\ell$ to maximize:
+
+\begin{equation}
+    U_\ell(\tau_\ell) = V(\tau_\ell^{*}) - \theta_\ell \cdot I(\omega; \tilde{s}_\ell),
+\end{equation}
+
+where $\tau_\ell^{*} = \tau_{\ell-1}^{*} + \tau_\ell$ is the posterior precision and $V(\cdot)$ is the value of information function (e.g., reduction in decision loss).
+
+\paragraph{Key Result: Robustness of Finite Depth.} We now establish that the finite-optimal-depth result carries over to the entropy-cost setting:
+
+\begin{proposition}[Finite Optimal Depth under Entropy Costs]
+\label{prop:finite_depth_entropy}
+Suppose each layer $\ell$ faces an entropy cost with parameter $\theta_\ell > 0$, and the value function $V(\tau)$ satisfies $V'(\tau) > 0$, $V''(\tau) < 0$, and the Inada-like condition $\lim_{\tau \to \infty} V'(\tau) = 0$. Then:
+\begin{enumerate}
+    \item[(i)] \textbf{Concave precision response:} The optimal precision $\tau_\ell^{*}(\theta_\ell)$ chosen at each layer satisfies $\frac{\partial^2 \tau_\ell^{*}}{\partial \theta_\ell^2} > 0$, i.e., precision decreases convexly in the cost parameter.
+    \item[(ii)] \textbf{Diminishing information increment:} The marginal contribution of layer $\ell$ to total precision, $\Delta_\ell \equiv \tau_\ell^{*} - \tau_{\ell-1}^{*}$, is decreasing in $\ell$ when $\theta_\ell$ is non-decreasing.
+    \item[(iii)] \textbf{Finite optimal depth:} If $\inf_\ell \theta_\ell > 0$, there exists a finite $L^{*} < \infty$ such that adding layer $L^{*}+1$ yields negative net value.
+\end{enumerate}
+\end{proposition}
+
+\begin{proof}[Proof Sketch]
+(i) At layer $\ell$, the first-order condition for optimal precision is:
+\begin{equation}
+    V'(\tau_{\ell-1}^{*} + \tau_\ell) = \frac{\theta_\ell}{2} \cdot \frac{1}{\tau_{\ell-1}^{*} + \tau_\ell}.
+\end{equation}
+This implicitly defines $\tau_\ell^{*}$ as a function of $\theta_\ell$. By the implicit function theorem and the convexity of the entropy cost in precision (the right-hand side derives from a log function), the response function is concave in $1/\theta_\ell$, which translates to a convex decrease in $\theta_\ell$.
+
+(ii) Since $\tau_\ell^{*}$ is increasing in inherited precision $\tau_{\ell-1}^{*}$ but with slope less than 1 (due to $V'' < 0$), the increment $\Delta_\ell$ decreases along the chain when cost parameters are bounded away from zero.
+
+(iii) The net value of adding layer $L+1$ is $V(\tau_{L+1}^{*}) - V(\tau_{L}^{*}) - \theta_{L+1} \cdot I(\omega; \tilde{s}_{L+1})$. Since $V'(\tau) \to 0$ as $\tau \to \infty$ while the marginal entropy cost remains bounded below by $\underline{\theta} \cdot (2\tau)^{-1} > 0$ for any finite $\tau$, there exists a finite threshold beyond which the cost exceeds the benefit. Thus $L^{*} < \infty$.
+\end{proof}
+
+\paragraph{Intuition for Robustness.} The critical insight is that the entropy cost function's \emph{convexity} in precision (arising from the logarithmic form of mutual information) naturally generates the same diminishing-returns property that our hard-budget model captures through the fixed-capacity constraint. Specifically:
+
+\begin{itemize}
+    \item Under hard budgets: The capacity constraint $\sum_{i} \alpha_i \leq \bar{A}_\ell$ forces the agent to be selective, and the concavity of the precision aggregator $\tau_\ell = f(\{\alpha_i \tau_i\})$ generates diminishing returns.
+    
+    \item Under entropy costs: The logarithmic cost $\log(1 + \tau_\ell / \tau_{\ell-1}^{*})$ generates \emph{increasing marginal cost} of precision, which similarly disciplines information acquisition and yields concave effective precision accumulation.
+\end{itemize}
+
+When $\theta_\ell \to 0$, the agent acquires infinite precision at a single layer, collapsing the multi-layer structure. However, as long as $\theta_\ell > 0$ (which is the economically relevant case), the chain structure creates information loss through the \emph{endogenous precision choice} at each layer rather than through hard selection.
+
+\begin{table}[htbp]
+\centering
+\caption{Comparison: Hard-Budget vs. Entropy-Cost Assumptions}
+\label{tab:assumption_comparison}
+\begin{tabular}{@{}p{3.2cm}p{5.5cm}p{5.5cm}@{}}
+\toprule
+\textbf{Dimension} & \textbf{Hard-Budget Assumption} & \textbf{Entropy-Cost Assumption} \\
+\midrule
+\textit{Information loss mechanism} & 
+Signals beyond budget $\bar{A}_\ell$ are completely ignored or truncated. & 
+All signals are processed, but with endogenously chosen (varying) precision. \\
+\addlinespace
+\textit{Optimization variable} & 
+Attention weight vector $\boldsymbol{\alpha}_\ell \in \Delta^{K}$ allocating discrete capacity. & 
+Information structure $P(\tilde{s} \mid \omega)$ choosing continuous signal precision. \\
+\addlinespace
+\textit{Observability} & 
+$\bar{A}_\ell$ directly observable as context window size. & 
+$\theta_\ell$ difficult to directly measure; requires calibration. \\
+\addlinespace
+\textit{Mapping to LLM} & 
+Direct: context window length imposes hard bound on tokens attended to. & 
+Indirect: requires mapping from entropy reduction to FLOPs/compute budget. \\
+\addlinespace
+\textit{Core conclusion robustness} & 
+Finite optimal depth (Proposition~\ref{prop:finite_depth}). & 
+Finite optimal depth (Proposition~\ref{prop:finite_depth_entropy}). \\
+\addlinespace
+\textit{Parameterization} & 
+Bounded $\bar{A}_\ell$ yields sharp cutoff predictions. & 
+Smooth precision response; no sharp cutoff. \\
+\addlinespace
+\textit{Applicable scenarios} & 
+Fixed context-window LLMs; systems with hard memory constraints. & 
+Variable-compute systems; adaptive attention mechanisms. \\
+\addlinespace
+\textit{Behavior as cost $\to$ 0} & 
+Agent processes all available signals with full precision. & 
+Agent acquires infinite precision at a single layer. \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsubsection{Discussion: Why Hard Budgets in the Baseline Model}
+
+We adopt the hard-budget assumption as our baseline for three substantive reasons related to \emph{empirical operability} and the specific application to large language models:
+
+\paragraph{Direct observability.} The hard budget $\bar{A}_\ell$ maps directly and transparently to a measurable technological parameter: the context window length of an LLM (e.g., 4,096 tokens for GPT-3, 128,000 tokens for GPT-4 Turbo). This observable anchor allows us to discipline the model with empirical moments and conduct counterfactuals about window-size expansion. In contrast, the entropy-cost parameter $\theta_\ell$ is a latent preference/technology parameter that must be identified indirectly from observed behavior, complicating empirical validation.
+
+\paragraph{Descriptive accuracy for current LLM architectures.} Current production LLMs operate with fixed context windows: tokens beyond the window length are either truncated entirely or compressed through external summarization mechanisms. This is precisely the hard-budget mechanism. While future architectures may implement variable compute allocation akin to entropy-cost optimization (e.g., adaptive attention budgets), the dominant paradigm remains hard-constrained.
+
+\paragraph{Analytical tractability.} The hard-budget formulation yields a finite-dimensional optimization over the simplex $\Delta^{K}$, enabling closed-form solutions for the attention allocation and sharp comparative statics. The entropy-cost formulation, while elegant, requires solving for an infinite-dimensional information structure, which complicates the analysis of multi-layer chains without adding commensurate insight for our application.
+
+\paragraph{Entropy costs as robustness check.} We view the entropy-cost formulation primarily as a \emph{robustness check} on the qualitative conclusions rather than as a competing baseline. As Proposition~\ref{prop:finite_depth_entropy} demonstrates, the core mechanism---diminishing returns to depth driven by concave precision accumulation---is preserved across both formulations. The key economic insight is robust: \emph{multi-layer information processing chains exhibit endogenously limited optimal depth because of convex information costs, whether these costs take the form of a hard capacity constraint or an entropy-based penalty}.
+
+\paragraph{Limiting behavior.} The two formulations diverge in extreme cases. As $\bar{A}_\ell \to \infty$ (hard budget) or $\theta_\ell \to 0$ (entropy cost), the single-layer precision tends to infinity, eliminating the rationale for chaining. However, the comparative statics differ: under hard budgets, the marginal signal jumps from fully processed to fully ignored at the threshold; under entropy costs, precision adjusts smoothly. In practice, for moderate parameter values away from these extremes, both formulations yield quantitatively similar predictions for the optimal depth $L^{*}$ and the total precision accumulated, as we verify in Appendix~\ref{app:entropy_calibration} through a calibrated numerical exercise.

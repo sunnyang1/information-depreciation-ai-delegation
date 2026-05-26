@@ -1,0 +1,65 @@
+\section{Related Literature}
+\label{sec:literature}
+
+Our work bridges four literatures: organizational economics, rational inattention, AI and organizations, and information design.
+
+\subsection{Organizations and Knowledge Hierarchies}
+
+The organizational economics literature on knowledge hierarchies and multi-layer contracting studies how information loss and control loss bound depth. \citet{garicano2000hierarchies} provides the canonical model of knowledge-based hierarchies, where problems are routed to agents with appropriate expertise. \citet{melumad1995hierarchical} analyze how control loss in hierarchies creates a trade-off between specialization and coordination. \citet{lash2008information} explicitly models control loss as a constraint on depth. \citet{bolton1994firm} study the firm as a communication network. \citet{radner1993organization} analyze decentralized information processing. Our contribution is to microfound the distortion mechanism in attention allocation rather than assuming it.
+
+\subsection{Rational Inattention}
+
+The rational inattention literature studies how information-processing constraints shape decision-making. \citet{sims2003implications} introduces the rational inattention framework, where agents face an entropy constraint on information processing. \citet{sims2006rational} applies this to monetary policy. \citet{mackowiak2023rational} provides a comprehensive review. \citet{dessein2006adaptive} study organizational attention in a two-layer setting, showing how attention scarcity shapes delegation. \citet{dessein2016rational} extend this to communication in organizations. \citet{caplin2015revealed} develop revealed-preference tests for rational inattention. Our model extends the organizational attention framework to arbitrarily deep chains.
+
+\subsection{Multi-Stage Information Design}
+
+A growing literature studies information design in dynamic and multi-stage settings. In these environments, a sender strategically controls the flow of information to a receiver (or receivers) who take actions over time. Our paper shares with this literature the fundamental premise that information is transmitted and evolves across multiple stages, but differs in emphasizing constrained information \emph{processing}---arising from attention scarcity within hierarchical organizations---rather than strategic information \emph{withholding} by a sender.
+
+\citet{ely2017beeps} studies a dynamic information transmission problem in which a sender communicates the state of a Markov process to a receiver via binary signals (``beeps''). The optimal signaling strategy involves selective disclosure: the sender pools states and releases information only when it is most consequential for the receiver's decision. The key insight is that the \emph{timing} of information revelation is a strategic choice, and the sender may optimally delay or suppress information to influence the receiver's beliefs. Our framework differs in that the constraint on information transmission arises not from a sender's strategic objectives but from the organizational limitation that each processing layer has finite attention capacity.
+
+\citet{renault2017optimal} analyze optimal dynamic information provision in a sender-receiver framework with a persistent binary state. They characterize the sender's value function and show that the optimal policy involves gradual revelation: information is released piecemeal over time to maximize the sender's expected payoff. The dynamics of belief updating are central to their analysis, as the sender faces a trade-off between revealing information early and withholding it to preserve future influence. In our model, similar intertemporal trade-offs arise, but they are driven by organizational rather than strategic considerations.
+
+\citet{escude2023slow} study ``slow persuasion,'' in which a sender provides public information over time subject to a graduality constraint. They show that when information can only accumulate gradually, the sender's ability to persuade is inhibited relative to the unconstrained benchmark. The graduality constraint in their model is exogenous, much as the attention constraint in our framework is determined by the organizational technology. The key difference is that their constraint limits the \emph{speed} of information acquisition, whereas ours limits the \emph{volume} of information that can be processed at each layer.
+
+\citet{smolin2021dynamic} studies a principal who designs a dynamic evaluation policy for an agent of uncertain productivity. Smolin shows that the equilibrium is Pareto efficient and that the wage deterministically grows with tenure. The evaluation policy serves as a dynamic information revelation mechanism. Our model shares the feature that information structures are chosen dynamically, but in our setting the designer chooses the \emph{architecture} of information processing rather than the informativeness of signals per se.
+
+The common thread across these papers is that information is a flow variable that must be managed over time. Our contribution is to study how this flow is governed by organizational structure: in a hierarchy with attention-constrained agents, the optimal architecture determines not only \emph{what} information is transmitted but also \emph{how much} of it survives at each stage.
+
+\subsection{AI and Organizations}
+
+A substantial empirical and theoretical literature documents the effects of artificial intelligence on productivity, labor markets, and the organization of work. Our paper complements this literature by examining the \emph{internal} structure of AI systems---how multiple AI agents should be organized into hierarchical architectures---rather than the effects of AI on human labor markets.
+
+\citet{acemoglu2018race} develop a task-based framework in which automation technologies displace labor in tasks previously performed by workers. Their key insight is that while automation directly reduces labor demand, it also indirectly encourages the creation of new tasks in which labor has a comparative advantage. \citet{acemoglu2022tasks} extend this framework to study wage inequality, showing that a substantial fraction of the rise in US wage inequality since 1980 can be attributed to automation of routine tasks. Our paper takes a different perspective: rather than studying how AI substitutes for or complements human labor in existing organizational structures, we ask how AI agents themselves should be organized into efficient architectures for processing information.
+
+\citet{acemoglu2022ai} study the impact of AI on labor markets using evidence from online vacancies. They document that AI-related skills are increasingly demanded in occupations that combine cognitive and technical tasks, and that AI adoption is associated with shifts in skill requirements rather than pure displacement.
+
+\citet{noy2023experimental} provide experimental evidence that generative AI tools substantially increase worker productivity. In a randomized controlled trial with professional writers, they find that access to ChatGPT reduces task completion time by 40\% and increases output quality. Importantly, the productivity gains are largest for less-skilled workers, suggesting that AI can compress skill-based wage differentials. \citet{peng2023impact} report similar findings for software developers using GitHub Copilot, documenting a 55.8\% reduction in task completion time.
+
+\citet{ide2025ai} embed AI into the knowledge-hierarchy framework of \citet{garicano2000hierarchies} but without attention scarcity. Recent work studies AI-driven organizational flattening, but typically abstracts from incentive constraints. We directly address the gap between AI capabilities (expanding context windows) and organizational limits (compounding attention loss).
+
+Our work is complementary to this literature in the following sense. The existing literature studies the \emph{macro} effects of AI adoption on human workers and firms---how AI changes the demand for skills, the distribution of wages, and the productivity of existing organizational forms. In contrast, we study the \emph{micro} design of AI systems themselves: given that AI agents have heterogeneous capabilities and attention constraints, what is the optimal hierarchical architecture for information processing?
+
+\subsection{Information Design}
+
+The information design literature provides tools for modeling strategic communication. \citet{kamenica2011bayesian} introduce Bayesian persuasion, where a sender designs a signal to influence a receiver's beliefs. \citet{lien2019hierarchies} extend this to multi-layer communication networks. Our model differs in that the ``design'' is not strategic but constrained by attention scarcity.
+
+\begin{table}[htbp]
+\centering
+\small
+\setlength{\tabcolsep}{5pt}
+\caption{Literature Mapping}
+\label{tab:literature}
+\begin{tabular}{@{}>{\raggedright\arraybackslash}p{3.0cm}>{\raggedright\arraybackslash}p{3.6cm}>{\raggedright\arraybackslash}p{3.8cm}@{}}
+\toprule
+\textbf{Contribution} & \textbf{Relation to Our Model} & \textbf{Differentiation} \\
+\midrule
+\citet{garicano2000hierarchies} & Knowledge hierarchy & + attention scarcity \\
+\citet{dessein2006adaptive} & Organizational attention & + continuous allocation + chain degradation \\
+\citet{hadfield2021principal} & Single-layer PA in AI & + chain extension + cascade mechanism \\
+\citet{phelps2023models} & Behavioral validation with LLMs & + multi-layer experimental design \\
+\citet{yang2025ten} & Heuristic: coordination costs & Formal proof: alignment costs persist \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+Table \ref{tab:literature} summarizes how our work relates to the most closely connected papers in each literature.

@@ -1,0 +1,309 @@
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% CORRECTION TO PROPOSITION 5.6: FINITE OPTIMAL DEPTH UNDER DIMINISHING SIGNAL QUALITY
+% Revision Notes: Introduces Assumption 5.1 (Diminishing Signal Quality) to
+% address the reviewer's concern that Proposition 5.6 fails under uniform technology.
+%
+% OUTPUT FILE CONTAINS:
+%   1. Assumption 5.1: Diminishing Signal Quality (formal statement)
+%   2. Proposition 5.6 (Corrected): Finite Optimal Depth with complete proof
+%   3. Economic intuition discussion (for main text, 2-3 paragraphs)
+%   4. Appendix A.7: Full detailed proof
+%   5. Two remarks: Comparative statics and comparison to no-attenuation case
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%==============================================================================
+% SECTION 1: ASSUMPTION 5.1 -- DIMINISHING SIGNAL QUALITY
+%==============================================================================
+
+\begin{assumption}[Diminishing Signal Quality]\label{ass:diminishing_signal}
+The quality of raw signals decays geometrically with the depth of the AI agent chain. Specifically, for each layer $\ell \in \{0, 1, \ldots, L\}$ and each information source $k \in \mathcal{K}$,
+\begin{equation}\label{eq:diminishing_signal}
+\tau^{0}_{\ell,k} = \tau^{0}_{k} \cdot \eta^{\ell},
+\end{equation}
+where $\tau^{0}_{k} > 0$ is the baseline signal precision and $\eta \in (0,1)$ is the \emph{signal attenuation factor}. Equivalently, the precision of signals processed at layer $\ell$ is an $\eta$-fraction of those processed at layer $\ell-1$.
+\end{assumption}
+
+\noindent \textbf{Economic rationale.} In multi-layered AI architectures, each processing stage transforms raw or intermediate inputs into new representations. Every transformation by an LLM introduces some degree of \emph{algorithmic noise}---semantic distortion, hallucination, or loss of fine-grained detail from the original data source. The deeper an information signal travels through the agent chain, the more cumulative noise it accumulates. The parameter $\eta$ captures the per-layer signal preservation rate: an $\eta$ close to 1 indicates high-fidelity transmission (e.g., retrieval-augmented systems with precise citations), while a smaller $\eta$ corresponds to lossy summarization or creative generation steps that obscure original signal content.
+
+%==============================================================================
+% SECTION 2: CORRECTED PROPOSITION 5.6 WITH COMPLETE PROOF
+%==============================================================================
+
+\begin{proposition}[Finite Optimal Depth under Diminishing Signal Quality]\label{prop:finite_depth}
+Suppose Assumption \ref{ass:diminishing_signal} holds and the technology is uniform across layers: $g_{\ell}(\cdot) = g(\cdot)$, $c_{\ell}(\cdot) = c(\cdot)$, and $K_{\ell} = K$ for all $\ell$. Let $\rho \in (0,1)$ denote the inter-layer precision depreciation factor. Define the composite signal contribution constant
+\begin{equation}\label{eq:C_constant}
+C \equiv \sum_{k=1}^{K} g\bigl(\alpha^{*}_{k}\bigr) \tau^{0}_{k},
+\end{equation}
+where $\alpha^{*}_{k}$ is the optimal attention allocation to source $k$. Then the equilibrium posterior precision at layer $L$ satisfies
+\begin{equation}\label{eq:tau_star_L}
+\tau^{*}_{L} = \rho^{L} \tau^{*}_{0} + \frac{C\eta\bigl(\eta^{L} - \rho^{L}\bigr)}{\eta - \rho} \quad \text{for } \eta \neq \rho,
+\end{equation}
+and $\tau^{*}_{L} = \eta^{L}\bigl(\tau^{*}_{0} + CL\bigr)$ when $\eta = \rho$. Moreover:
+\begin{enumerate}
+\item[(i)] \textbf{Vanishing precision:} $\displaystyle \lim_{L \to \infty} \tau^{*}_{L} = 0$.
+\item[(ii)] \textbf{Eventual monotonic decline:} There exists a finite threshold $\bar{L} \in \mathbb{N}$ such that $\tau^{*}_{\ell} < \tau^{*}_{\ell-1}$ for all $\ell \geq \bar{L}$.
+\item[(iii)] \textbf{Finite optimal depth:} The social value function $V(\tau^{*}_{L})$, where $V(\cdot)$ is strictly increasing, attains its maximum at some finite $L^{*} \leq \bar{L}$. Consequently, even when the marginal cost of attention $\kappa \to 0$, the optimal depth $L^{*}$ remains finite as long as the attention budget $\{A_{\ell}\}$ is bounded.
+\end{enumerate}
+\end{proposition}
+
+\begin{proof}
+We proceed in five steps.
+
+\paragraph{Step 1: Derivation of the recursive formula.}
+Under uniform technology and Assumption \ref{ass:diminishing_signal}, the equilibrium posterior precision follows the recursive structure:
+\begin{equation}\label{eq:recursive_tau}
+\tau^{*}_{\ell} = \rho \cdot \tau^{*}_{\ell-1} + \sum_{k=1}^{K} g\bigl(\alpha^{*}_{k}\bigr) \tau^{0}_{\ell,k}
+= \rho \cdot \tau^{*}_{\ell-1} + \eta^{\ell} \underbrace{\sum_{k=1}^{K} g\bigl(\alpha^{*}_{k}\bigr) \tau^{0}_{k}}_{\equiv C},
+\end{equation}
+with initial condition $\tau^{*}_{0} = \tau^{0}_{0} = \sum_{k} \tau^{0}_{k}$.
+
+\paragraph{Step 2: Solving the linear recurrence.}
+Equation \eqref{eq:recursive_tau} is a first-order linear non-homogeneous difference equation. We solve it separately for the cases $\eta \neq \rho$ and $\eta = \rho$.
+
+\textit{Case 1: $\eta \neq \rho$.} The homogeneous solution is $\tau^{(h)}_{\ell} = A \rho^{\ell}$. For a particular solution, guess $\tau^{(p)}_{\ell} = B \eta^{\ell}$. Substituting into \eqref{eq:recursive_tau}:
+\begin{equation*}
+B\eta^{\ell} = \rho B \eta^{\ell-1} + C\eta^{\ell}
+\quad\Longrightarrow\quad
+B\eta = \rho B + C\eta
+\quad\Longrightarrow\quad
+B = \frac{C\eta}{\eta - \rho}.
+\end{equation*}
+The general solution is $\tau^{*}_{\ell} = A \rho^{\ell} + B\eta^{\ell}$. Applying the initial condition $\tau^{*}_{0}$:
+\begin{equation*}
+\tau^{*}_{0} = A + B \quad\Longrightarrow\quad A = \tau^{*}_{0} - \frac{C\eta}{\eta - \rho}.
+\end{equation*}
+Therefore,
+\begin{equation}
+\tau^{*}_{L} = \left(\tau^{*}_{0} - \frac{C\eta}{\eta - \rho}\right)\rho^{L} + \frac{C\eta}{\eta - \rho}\eta^{L}
+= \rho^{L}\tau^{*}_{0} + \frac{C\eta\bigl(\eta^{L} - \rho^{L}\bigr)}{\eta - \rho},
+\end{equation}
+which establishes \eqref{eq:tau_star_L}.
+
+\textit{Case 2: $\eta = \rho$.} The recurrence becomes $\tau^{*}_{\ell} = \eta \tau^{*}_{\ell-1} + C\eta^{\ell}$. Define $u_{\ell} \equiv \tau^{*}_{\ell} / \eta^{\ell}$. Then:
+\begin{equation*}
+u_{\ell} = \frac{\tau^{*}_{\ell}}{\eta^{\ell}} = \frac{\eta\tau^{*}_{\ell-1} + C\eta^{\ell}}{\eta^{\ell}} = \frac{\tau^{*}_{\ell-1}}{\eta^{\ell-1}} + C = u_{\ell-1} + C.
+\end{equation*}
+Since $u_{0} = \tau^{*}_{0}$, telescoping yields $u_{\ell} = \tau^{*}_{0} + C\ell$, and hence:
+\begin{equation}\label{eq:tau_equal_case}
+\tau^{*}_{L} = \eta^{L}\bigl(\tau^{*}_{0} + CL\bigr).
+\end{equation}
+
+\paragraph{Step 3: Vanishing precision (Part (i)).}
+Since $\rho, \eta \in (0,1)$, we have $\rho^{L} \to 0$ and $\eta^{L} \to 0$ as $L \to \infty$.
+
+\textit{For $\eta \neq \rho$:} Both terms in \eqref{eq:tau_star_L} vanish:
+\begin{equation}
+\lim_{L\to\infty} \tau^{*}_{L} = \tau^{*}_{0} \cdot 0 + \frac{C\eta}{\eta-\rho}(0 - 0) = 0.
+\end{equation}
+
+\textit{For $\eta = \rho$:} Although $\tau^{*}_{0} + CL$ grows linearly, exponential decay dominates:
+\begin{equation}
+\lim_{L\to\infty} \tau^{*}_{L} = \lim_{L\to\infty} \eta^{L}\bigl(\tau^{*}_{0} + CL\bigr) = 0,
+\end{equation}
+since for any $\eta \in (0,1)$ and any polynomial $P(L)$, $\lim_{L\to\infty} \eta^{L} P(L) = 0$.
+
+\paragraph{Step 4: Eventual monotonic decline (Part (ii)).}
+From the recurrence \eqref{eq:recursive_tau}, the layer-to-layer change is:
+\begin{equation}\label{eq:delta_tau}
+\Delta_{\ell} \equiv \tau^{*}_{\ell} - \tau^{*}_{\ell-1} = -(1-\rho)\tau^{*}_{\ell-1} + C\eta^{\ell}.
+\end{equation}
+We show $\Delta_{\ell} < 0$ for all sufficiently large $\ell$.
+
+\textit{Subcase 4a: $\eta > \rho$.} From \eqref{eq:tau_star_L}, as $\ell \to \infty$, the $\eta^{\ell}$ term dominates:
+\begin{equation}
+\tau^{*}_{\ell-1} = \Theta(\eta^{\ell}) \quad\text{with}\quad
+\tau^{*}_{\ell-1} \sim \frac{C\eta^{\ell}}{\eta-\rho}.
+\end{equation}
+Substituting into \eqref{eq:delta_tau}:
+\begin{equation*}
+\Delta_{\ell} \sim -(1-\rho)\frac{C\eta^{\ell}}{\eta-\rho} + C\eta^{\ell}
+= C\eta^{\ell}\left(1 - \frac{1-\rho}{\eta-\rho}\right)
+= C\eta^{\ell}\frac{\eta - 1}{\eta - \rho} < 0,
+\end{equation*}
+since $\eta < 1$ and $\eta > \rho$ imply both numerator and denominator are positive, making the ratio negative. Hence $\Delta_{\ell} < 0$ for all large $\ell$.
+
+\textit{Subcase 4b: $\eta < \rho$.} Now the $\rho^{\ell}$ term dominates:
+\begin{equation}
+\tau^{*}_{\ell-1} = \Theta(\rho^{\ell}) \quad\text{with}\quad
+\tau^{*}_{\ell-1} \sim \left(\tau^{*}_{0} + \frac{C\eta}{\rho-\eta}\right)\rho^{\ell-1}.
+\end{equation}
+Substituting into \eqref{eq:delta_tau}:
+\begin{equation*}
+\Delta_{\ell} \sim -(1-\rho)\left(\tau^{*}_{0} + \frac{C\eta}{\rho-\eta}\right)\rho^{\ell-1} + C\eta^{\ell}.
+\end{equation*}
+Since $\rho > \eta$, the term $\rho^{\ell-1}$ decays \emph{slower} than $\eta^{\ell}$, so the negative first term dominates for large $\ell$. Therefore $\Delta_{\ell} < 0$ for all $\ell \geq \bar{L}$ for some finite $\bar{L}$.
+
+\textit{Subcase 4c: $\eta = \rho$.} Using \eqref{eq:tau_equal_case}:
+\begin{align}
+\Delta_{\ell} &= \eta^{\ell}(\tau^{*}_{0} + C\ell) - \eta^{\ell-1}(\tau^{*}_{0} + C(\ell-1)) \notag \\
+&= \eta^{\ell-1}\bigl[(\eta-1)\tau^{*}_{0} + C(\eta\ell - \ell + 1)\bigr] \notag \\
+&= \eta^{\ell-1}\bigl[(\eta-1)\tau^{*}_{0} + C - C(1-\eta)\ell\bigr].
+\end{align}
+Since $\eta < 1$, the coefficient of $\ell$ is negative. Thus $\Delta_{\ell} < 0$ whenever:
+\begin{equation}
+\ell > \frac{(1-\eta)\tau^{*}_{0} + C}{C(1-\eta)} = \frac{\tau^{*}_{0}}{C} + \frac{1}{1-\eta},
+\end{equation}
+which is a finite threshold. This completes the proof of Part (ii).
+
+\paragraph{Step 5: Finite optimal depth (Part (iii)).}
+Since $V(\cdot)$ is strictly increasing, Part (ii) implies that $V(\tau^{*}_{\ell}) < V(\tau^{*}_{\ell-1})$ for all $\ell \geq \bar{L}$. Thus the sequence $\{V(\tau^{*}_{\ell})\}_{\ell=0}^{\infty}$ increases up to some finite index and then decreases strictly. The maximum is attained at some $L^{*} \leq \bar{L} < \infty$.
+
+Even when the marginal attention cost $\kappa \to 0$, the net marginal benefit of adding layer $\ell \geq \bar{L}$ is:
+\begin{equation}
+V(\tau^{*}_{\ell}) - V(\tau^{*}_{\ell-1}) - \kappa < 0 - \kappa \leq 0,
+\end{equation}
+so no layer beyond $\bar{L}$ is ever optimal. Hence $L^{*} \leq \bar{L}$ remains finite.
+\end{proof}
+
+%==============================================================================
+% SECTION 3: ECONOMIC INTUITION DISCUSSION (for main text)
+%==============================================================================
+
+\vspace{2em}
+\noindent\textbf{Economic Discussion: The Role of Diminishing Signal Quality}
+
+The critical insight of Proposition \ref{prop:finite_depth} is that \emph{depth-induced signal degradation} fundamentally alters the returns to layering. Without Assumption \ref{ass:diminishing_signal}, uniform technology would make each additional layer contribute a constant-in-expectation amount of information, causing the posterior precision to converge to a positive limit $\bar{\tau} = C/(1-\rho) > 0$ and making infinite depth optimal as $\kappa \to 0$. This unrealistic prediction---that a free, infinite chain of identical LLMs always improves decisions---stems from ignoring the information-theoretic reality that each generative transformation necessarily injects noise.
+
+The signal attenuation factor $\eta$ captures this degradation mechanism parsimoniously. It can be micro-founded through several channels: (i) \emph{compressive loss} when each LLM distills verbose inputs into concise outputs; (ii) \emph{hallucination risk} where models introduce plausible-sounding but factually incorrect content; and (iii) \emph{context window saturation} where deeper layers must drop earlier signals to accommodate new inputs. Empirically, $\eta$ could be calibrated from the observed degradation in question-answering accuracy across multi-hop retrieval chains or in multi-agent debate settings where information propagates through several rhetorical turns.
+
+The parameter $\eta$ thus serves a role analogous to depreciation in capital accumulation: just as physical capital loses productive value through wear and tear, information capital (posterior precision) erodes through repeated algorithmic processing. This erosion creates a natural ``technology frontier'' beyond which additional AI agents destroy rather than create decision-relevant information. Our result that $L^{*}$ is bounded even when API calls are free ($\kappa=0$) formalizes the intuition that organizational limits to AI delegation derive not from budget constraints alone, but from fundamental information-theoretic limits to trustworthy computation.
+
+%==============================================================================
+% SECTION 4: CORRECTED APPENDIX A.7
+%==============================================================================
+
+\newpage
+\section*{Appendix A.7\quad Proof of Proposition \ref{prop:finite_depth}}
+\label{app:proof_finite_depth}
+
+\renewcommand{\theequation}{A.7.\arabic{equation}}
+\setcounter{equation}{0}
+
+This appendix provides the complete proof of Proposition \ref{prop:finite_depth}, which establishes the finiteness of optimal depth under diminishing signal quality. The proof proceeds in five logical steps. We first derive the recursive structure of equilibrium precision, then solve the linear difference equation in closed form, establish the vanishing limit, prove eventual monotonic decline, and finally deduce finite optimal depth.
+
+\paragraph{Step 1: Recursive structure.}
+Under uniform technology ($g_{\ell} = g$, $c_{\ell} = c$, $K_{\ell} = K$ for all $\ell$) and Assumption \ref{ass:diminishing_signal}, the equilibrium posterior precision at layer $\ell$ evolves according to:
+\begin{equation}\label{eq:app_recursive}
+\tau^{*}_{\ell} = \underbrace{\rho \cdot \tau^{*}_{\ell-1}}_{\text{precision carried forward}} + \underbrace{\sum_{k=1}^{K} g\bigl(\alpha^{*}_{k}\bigr) \tau^{0}_{\ell,k}}_{\text{new signal contribution}}.
+\end{equation}
+By Assumption \ref{ass:diminishing_signal}, $\tau^{0}_{\ell,k} = \tau^{0}_{k} \eta^{\ell}$, so the new signal contribution becomes:
+\begin{equation}\label{eq:app_C_def}
+\sum_{k=1}^{K} g\bigl(\alpha^{*}_{k}\bigr) \tau^{0}_{k} \eta^{\ell} = C \eta^{\ell},
+\end{equation}
+where $C$ is defined in \eqref{eq:C_constant}. The initial condition is $\tau^{*}_{0} = \sum_{k=1}^{K} \tau^{0}_{0,k} = \sum_{k=1}^{K} \tau^{0}_{k}$. Thus \eqref{eq:app_recursive} simplifies to:
+\begin{equation}\label{eq:app_simplified_recurrence}
+\tau^{*}_{\ell} = \rho \tau^{*}_{\ell-1} + C \eta^{\ell}, \qquad \tau^{*}_{0} \text{ given}.
+\end{equation}
+
+\paragraph{Step 2: Closed-form solution.}
+Equation \eqref{eq:app_simplified_recurrence} is a first-order linear non-homogeneous difference equation with varying coefficients in the forcing term. We solve it using standard methods.
+
+\textit{Case 1: $\eta \neq \rho$.} The general solution decomposes as $\tau^{*}_{\ell} = \tau^{(h)}_{\ell} + \tau^{(p)}_{\ell}$. The homogeneous equation $\tau^{(h)}_{\ell} = \rho \tau^{(h)}_{\ell-1}$ has solution $\tau^{(h)}_{\ell} = A \rho^{\ell}$. For the particular solution, the forcing term $C\eta^{\ell}$ suggests the ansatz $\tau^{(p)}_{\ell} = B \eta^{\ell}$. Substituting:
+\begin{equation*}
+B\eta^{\ell} = \rho B \eta^{\ell-1} + C\eta^{\ell}
+\quad\Longrightarrow\quad
+B\eta = \rho B + C\eta
+\quad\Longrightarrow\quad
+B = \frac{C\eta}{\eta - \rho}.
+\end{equation*}
+Applying the initial condition $\tau^{*}_{0} = A + B$:
+\begin{equation}
+A = \tau^{*}_{0} - \frac{C\eta}{\eta - \rho}.
+\end{equation}
+Therefore, for all $L \geq 0$:
+\begin{equation}\label{eq:app_closed_form}
+\tau^{*}_{L} = \rho^{L}\tau^{*}_{0} + \frac{C\eta}{\eta - \rho}\bigl(\eta^{L} - \rho^{L}\bigr),
+\end{equation}
+which coincides with equation \eqref{eq:tau_star_L} in the main text.
+
+\textit{Case 2: $\eta = \rho$.} The recurrence becomes $\tau^{*}_{\ell} = \eta \tau^{*}_{\ell-1} + C\eta^{\ell}$. Dividing both sides by $\eta^{\ell}$:
+\begin{equation}
+\frac{\tau^{*}_{\ell}}{\eta^{\ell}} = \frac{\tau^{*}_{\ell-1}}{\eta^{\ell-1}} + C.
+\end{equation}
+Defining $u_{\ell} \equiv \tau^{*}_{\ell}/\eta^{\ell}$, this becomes $u_{\ell} = u_{\ell-1} + C$, which telescopes to $u_{\ell} = u_{0} + C\ell = \tau^{*}_{0} + C\ell$. Restoring $\tau^{*}_{L}$:
+\begin{equation}\label{eq:app_equal_case}
+\tau^{*}_{L} = \eta^{L}\bigl(\tau^{*}_{0} + CL\bigr).
+\end{equation}
+
+\paragraph{Step 3: Vanishing precision (Part (i) of Proposition).}
+We establish that $\lim_{L\to\infty} \tau^{*}_{L} = 0$ in all cases.
+
+For $\eta \neq \rho$, since $\rho, \eta \in (0,1)$:
+\begin{equation}
+\lim_{L\to\infty} \rho^{L} = 0, \qquad \lim_{L\to\infty} \eta^{L} = 0,
+\end{equation}
+so both terms in \eqref{eq:app_closed_form} converge to zero. For $\eta = \rho$, the linear growth of $\tau^{*}_{0} + CL$ is asymptotically dominated by the exponential decay of $\eta^{L}$:
+\begin{equation}
+\lim_{L\to\infty} \eta^{L}\bigl(\tau^{*}_{0} + CL\bigr) = 0,
+\end{equation}
+since $\lim_{L\to\infty} L^{m} \eta^{L} = 0$ for any $m \geq 0$ and $\eta \in (0,1)$. This completes Part (i).
+
+\paragraph{Step 4: Eventual monotonic decline (Part (ii)).}
+From \eqref{eq:app_simplified_recurrence}, the increment is:
+\begin{equation}\label{eq:app_delta}
+\Delta_{\ell} \equiv \tau^{*}_{\ell} - \tau^{*}_{\ell-1} = -(1-\rho)\tau^{*}_{\ell-1} + C\eta^{\ell}.
+\end{equation}
+We prove $\Delta_{\ell} < 0$ for all sufficiently large $\ell$ by considering three subcases.
+
+\textit{Subcase 4a: $\eta > \rho$.} From \eqref{eq:app_closed_form}, as $\ell \to \infty$, the term $\eta^{\ell}$ dominates $\rho^{\ell}$ (since $\eta > \rho$), yielding the asymptotic equivalence:
+\begin{equation}
+\tau^{*}_{\ell-1} \sim \frac{C\eta^{\ell}}{\eta - \rho} \qquad (\ell \to \infty).
+\end{equation}
+Substituting into \eqref{eq:app_delta}:
+\begin{equation}
+\Delta_{\ell} \sim -(1-\rho)\frac{C\eta^{\ell}}{\eta-\rho} + C\eta^{\ell}
+= C\eta^{\ell}\left(\frac{\eta - \rho - 1 + \rho}{\eta - \rho}\right)
+= C\eta^{\ell}\frac{\eta - 1}{\eta - \rho}.
+\end{equation}
+Since $\eta < 1$, the numerator $\eta - 1 < 0$, while the denominator $\eta - \rho > 0$. Hence $\Delta_{\ell} \sim \text{[negative constant]} \times \eta^{\ell} < 0$ for all large $\ell$.
+
+\textit{Subcase 4b: $\eta < \rho$.} Now $\rho^{\ell}$ dominates, giving:
+\begin{equation}
+\tau^{*}_{\ell-1} \sim \left(\tau^{*}_{0} + \frac{C\eta}{\rho - \eta}\right)\rho^{\ell-1} \qquad (\ell \to \infty).
+\end{equation}
+Substituting into \eqref{eq:app_delta}:
+\begin{equation}
+\Delta_{\ell} \sim -(1-\rho)\left(\tau^{*}_{0} + \frac{C\eta}{\rho-\eta}\right)\rho^{\ell-1} + C\eta^{\ell}.
+\end{equation}
+Since $\rho > \eta$, the negative term decays as $\rho^{\ell-1}$ while the positive term decays as $\eta^{\ell}$. The former decays strictly slower and has a negative coefficient, so it dominates for large $\ell$. Thus $\Delta_{\ell} < 0$ for all $\ell \geq \bar{L}$ with:
+\begin{equation}
+\bar{L} = \inf\left\{\ell \in \mathbb{N} : \ell > \frac{\ln\!\left(\frac{(1-\rho)}{C}\bigl(\tau^{*}_{0} + \frac{C\eta}{\rho-\eta}\bigr)\right)}{\ln(\eta/\rho)}\right\} + 1,
+\end{equation}
+which is finite since $\ln(\eta/\rho) < 0$.
+
+\textit{Subcase 4c: $\eta = \rho$.} Using \eqref{eq:app_equal_case}:
+\begin{align}
+\Delta_{\ell} &= \eta^{\ell}(\tau^{*}_{0} + C\ell) - \eta^{\ell-1}\bigl(\tau^{*}_{0} + C(\ell-1)\bigr) \notag \\
+&= \eta^{\ell-1}\bigl[\underbrace{(\eta-1)\tau^{*}_{0}}_{< 0} + \underbrace{C(1 - (1-\eta)\ell)}_{\to -\infty}\bigr].
+\end{align}
+Since the bracket is affine in $\ell$ with negative slope $-C(1-\eta) < 0$, there exists:
+\begin{equation}
+\bar{L} = \left\lfloor\frac{\tau^{*}_{0}}{C} + \frac{1}{1-\eta}\right\rfloor + 2,
+\end{equation}
+such that $\Delta_{\ell} < 0$ for all $\ell \geq \bar{L}$. This completes Part (ii).
+
+\paragraph{Step 5: Finite optimal depth (Part (iii)).}
+Strict monotonicity of $V(\cdot)$ and Part (ii) together imply:
+\begin{equation}
+V(\tau^{*}_{\ell}) < V(\tau^{*}_{\ell-1}) \quad \text{for all } \ell \geq \bar{L}.
+\end{equation}
+Thus $\{V(\tau^{*}_{\ell})\}_{\ell=0}^{\infty}$ is strictly decreasing beyond $\bar{L}$, so its maximum is attained at some $L^{*} \in \{0, 1, \ldots, \bar{L}\}$.
+
+When the marginal attention cost is $\kappa \geq 0$, adding any layer $\ell \geq \bar{L}$ yields net marginal benefit:
+\begin{equation}
+\underbrace{V(\tau^{*}_{\ell}) - V(\tau^{*}_{\ell-1})}_{< 0} - \kappa < 0,
+\end{equation}
+which is strictly negative. Hence no planner would ever choose $\ell > \bar{L}$, and $L^{*} \leq \bar{L} < \infty$ regardless of how small $\kappa$ is. This completes the proof of Proposition \ref{prop:finite_depth}. \hfill $\blacksquare$
+
+\vspace{1.5em}
+\begin{remark}[Comparative statics on $\bar{L}$]
+The threshold $\bar{L}$ beyond which precision decreases is increasing in the baseline precision $\tau^{*}_{0}$ and decreasing in the signal contribution $C$ and the attenuation factor $\eta$. Specifically, a higher $\eta$ (better signal preservation) pushes $\bar{L}$ outward, allowing more layers before returns turn negative. In the limit $\eta \to 1$, the threshold diverges, recovering the original model where infinite depth can be optimal.
+\end{remark}
+
+\begin{remark}[Comparison to the no-attenuation case]
+When $\eta = 1$ (no signal degradation), the recurrence \eqref{eq:app_simplified_recurrence} becomes $\tau^{*}_{\ell} = \rho \tau^{*}_{\ell-1} + C$, with solution $\tau^{*}_{L} = \rho^{L}\tau^{*}_{0} + C(1-\rho^{L})/(1-\rho) \to C/(1-\rho) > 0$. The precision converges to a positive limit, so $V(\tau^{*}_{L})$ converges to $V(C/(1-\rho)) > V(0)$ from below, and infinite depth is optimal whenever $\kappa < V(C/(1-\rho)) - \lim_{L\to\infty}V(\tau^{*}_{L-1}) = 0^{+}$. The diminishing signal quality assumption ($\eta < 1$) is therefore \emph{necessary and sufficient} for the finite-depth result under uniform technology.
+\end{remark}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% END OF FILE
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

@@ -1,0 +1,73 @@
+\documentclass[12pt,a4paper]{article}
+\usepackage[margin=1in]{geometry}
+\usepackage{amsmath,amssymb,amsthm}
+\usepackage{microtype}
+\setlength{\emergencystretch}{2em}
+\usepackage{graphicx}
+\usepackage{booktabs}
+\usepackage{longtable}
+\usepackage{array}
+\usepackage{multirow}
+\usepackage{natbib}
+\usepackage[colorlinks=true,linkcolor=blue,citecolor=darkgray,urlcolor=blue]{hyperref}
+\usepackage{tcolorbox}
+\usepackage{enumitem}
+\usepackage{setspace}
+\usepackage{float}
+\usepackage{caption}
+\usepackage{subcaption}
+\usepackage{xcolor}
+\usepackage{mathtools}
+\usepackage{bm}
+\usepackage{algorithm}
+\usepackage{algpseudocode}
+
+% Theorem environments
+\newtheorem{assumption}{Assumption}
+\newtheorem{proposition}{Proposition}
+\newtheorem{definition}{Definition}
+\newtheorem{remark}{Remark}
+\newtheorem{lemma}{Lemma}
+\newtheorem{corollary}{Corollary}
+\newtheorem{prediction}{Prediction}
+
+% AER-style citations
+\bibpunct{(}{)}{;}{a}{}{,}
+
+\title{\textbf{Information Depreciation and Optimal Depth in AI Delegation Chains}}
+\author{[Authors Redacted for Peer Review]}
+\date{May 25, 2026}
+
+\begin{document}
+
+\maketitle
+
+\begin{abstract}
+\noindent When AI agents delegate to other AI agents, information depreciates at each processing layer. We show that this information depreciation---combined with attention scarcity---bounds organizational depth. We embed rational inattention into a multi-layer hierarchy: each agent allocates scarce attention across upstream signals subject to a finite budget (context window). The endogenous transmission factor emerges from Bayesian updating rather than being assumed. We prove that optimal depth is finite and interior, that precision loss compounds geometrically through the chain, and that front-loaded budget allocation---larger context windows at early layers---maximizes output quality. When API costs vanish, the bound on depth persists because finite context windows ensure that each layer must compress information, and that compression compounds. We provide illustrative parameterization of the model using LLM benchmark data and propose five testable predictions with specific regression specifications and identification strategies.
+\end{abstract}
+
+\vspace{1em}
+\noindent\textbf{JEL Codes:} D23, D82, L22, L86, O32, O33
+
+\vspace{2em}
+\input{sec_intro}
+\input{sec_literature}
+\input{sec_model}
+\input{sec_single}
+\input{sec_multi}
+\input{sec_calibration}
+\input{sec_empirical}
+\input{sec_experiments}
+\input{sec_extensions}
+\input{sec_conclusion}
+
+\newpage
+\appendix
+\input{sec_appendix}
+
+\newpage
+\section*{References}
+\addcontentsline{toc}{section}{References}
+\input{sec_refs}
+
+\end{document}

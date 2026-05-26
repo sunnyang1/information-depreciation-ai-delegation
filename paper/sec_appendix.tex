@@ -1,0 +1,308 @@
+\section{Proof of Proposition~\ref{prop:optimal_attention}}
+\label{app:proof_prop1}
+
+The agent's problem is to maximize $V_\ell(\tau_\ell)$ subject to $\sum_k \alpha_{\ell,k} \leq A_\ell$ and $\alpha_{\ell,k} \geq 0$. The Lagrangian is:
+\begin{equation*}
+\mathcal{L} = V_\ell\Biggl(\tau^{\text{prior}}_\ell + \sum_{k=1}^{K_\ell} \alpha_{\ell,k}^\gamma \tau^0_{\ell,k}\Biggr) - \lambda_\ell\Biggl(\sum_{k=1}^{K_\ell} \alpha_{\ell,k} - A_\ell\Biggr) + \sum_{k=1}^{K_\ell} \mu_{\ell,k} \alpha_{\ell,k}.
+\end{equation*}
+
+\textbf{Step 1: KKT conditions.} Because $V_\ell(\cdot)$ is strictly increasing and $g_\ell(\cdot) = (\cdot)^\gamma$ is strictly concave for $\gamma \in (0,1)$, the objective is strictly concave in $\boldsymbol{\alpha}_\ell$. The feasible set (a simplex intersected with the positive orthant) is convex and compact. Hence a unique maximizer exists and is characterized by the KKT conditions:
+\begin{align}
+V'_\ell(\tau^*_\ell) \gamma \alpha^{*\gamma-1}_{\ell,k} \tau^0_{\ell,k} - \lambda_\ell + \mu_{\ell,k} &= 0 \quad \text{(FOC)} \label{eq:kkt_foc}\\
+\sum_{k=1}^{K_\ell} \alpha^*_{\ell,k} &= A_\ell \quad \text{(budget)} \label{eq:kkt_budget}\\
+\alpha^*_{\ell,k} \geq 0, \; \mu_{\ell,k} \geq 0, \; \mu_{\ell,k} \alpha^*_{\ell,k} &= 0 \quad \text{(CS)}. \label{eq:kkt_cs}
+\end{align}
+
+\textbf{Step 2: Corner solutions.} For any signal $k$ with $\alpha^*_{\ell,k} = 0$, complementary slackness implies $\mu_{\ell,k} \geq 0$. The FOC becomes:
+\begin{equation*}
+\mu_{\ell,k} = \lambda_\ell - V'_\ell(\tau^*_\ell) \gamma \cdot \lim_{\alpha \to 0} \alpha^{\gamma-1} \tau^0_{\ell,k} = +\infty > 0,
+\end{equation*}
+because $\gamma - 1 < 0$ and $\lim_{\alpha \to 0} \alpha^{\gamma-1} = +\infty$. Thus the FOC is satisfied for any $\alpha^*_{\ell,k} = 0$.
+
+\textbf{Step 3: Interior solutions.} For $\alpha^*_{\ell,k} > 0$, we have $\mu_{\ell,k} = 0$ and the FOC yields:
+\begin{equation*}
+\alpha^*_{\ell,k} = \biggl(\frac{\gamma \tau^0_{\ell,k}}{\lambda_\ell}\biggr)^{\frac{1}{1-\gamma}}.
+\end{equation*}
+This is increasing in $\tau^0_{\ell,k}$ and decreasing in $\lambda_\ell$. Rearranging gives Equation~\eqref{eq:closed_form}.
+
+\textbf{Step 4: Determining the active set.} Let signals be ordered by precision: $\tau^0_{\ell,1} \geq \tau^0_{\ell,2} \geq \cdots \geq \tau^0_{\ell,K_\ell}$. Define the threshold precision:
+\begin{equation*}
+\bar{\tau}(\lambda_\ell) = \frac{\lambda_\ell}{V'_\ell(\tau^*_\ell) \gamma} \cdot A_\ell^{1-\gamma}.
+\end{equation*}
+Then $\alpha^*_{\ell,k} > 0$ if and only if $\tau^0_{\ell,k} > \bar{\tau}(\lambda_\ell)$. The active set is $\mathcal{A}_\ell = \{k : \tau^0_{\ell,k} > \bar{\tau}\}$. Because $\bar{\tau}$ decreases in $A_\ell$, more signals become active as the budget grows.
+
+\textbf{Step 5: Uniqueness.} The objective is strictly concave (composition of strictly increasing concave $V_\ell$ with strictly concave precision function), and the constraint set is convex. A strictly concave function on a convex set has a unique maximizer. \hfill $\square$
+
+\section{Proof of Proposition~\ref{prop:distortion_comp_statics}}
+\label{app:proof_prop2}
+
+Recall $\Delta_\ell = 1 - \rho_\ell$, where $\rho_\ell$ is given by Definition~\ref{def:transmission_factor}. For the bottom layer with $\tau^{\text{prior}}_\ell = 0$, the transmission factor reduces to:
+\begin{equation*}
+\rho_\ell = \frac{\sum_k g_\ell(\alpha^*_{\ell,k}) \tau^0_{\ell,k}}{\sum_k \tau^0_{\ell,k}}.
+\end{equation*}
+
+\textbf{(i) Budget effect.} From the KKT solution (Proposition~\ref{prop:optimal_attention}), interior attention weights satisfy $\alpha^*_{\ell,k} = (\gamma \tau^0_{\ell,k} / \lambda_\ell)^{1/(1-\gamma)}$. Summing over the active set and imposing the budget constraint yields:
+\begin{equation*}
+\lambda_\ell = \gamma \Biggl(\frac{\sum_{k \in \mathcal{A}_\ell} (\tau^0_{\ell,k})^{\frac{1}{1-\gamma}}}{A_\ell}\Biggr)^{1-\gamma}.
+\end{equation*}
+Substituting back, the optimal weight is:
+\begin{equation*}
+\alpha^*_{\ell,k} = A_\ell \cdot \frac{(\tau^0_{\ell,k})^{\frac{1}{1-\gamma}}}{\sum_{j \in \mathcal{A}_\ell} (\tau^0_{\ell,j})^{\frac{1}{1-\gamma}}}, \quad k \in \mathcal{A}_\ell.
+\end{equation*}
+Hence $\alpha^*_{\ell,k} = c_k A_\ell$ where $c_k > 0$ depends only on the relative precisions. With $g_\ell(\alpha) = \alpha^\gamma$, we have $g_\ell(\alpha^*_{\ell,k}) = (c_k A_\ell)^\gamma$. The transmission factor becomes:
+\begin{equation*}
+\rho_\ell = \frac{A_\ell^\gamma \sum_{k \in \mathcal{A}_\ell} c_k^\gamma \tau^0_{\ell,k}}{\sum_{k=1}^{K_\ell} \tau^0_{\ell,k}},
+\end{equation*}
+which is increasing in $A_\ell$. Therefore $\partial \Delta_\ell / \partial A_\ell = -\partial \rho_\ell / \partial A_\ell < 0$.
+
+\textbf{(ii) Signal count effect.} When $K_\ell$ increases while $A_\ell$ is fixed, the budget is spread more thinly across signals. The marginal signals added have lower intrinsic precision, reducing the average precision per signal. The transmission factor $\rho_\ell$ decreases because the denominator $\sum_k \tau^0_{\ell,k}$ increases (holding average precision constant) while the numerator increases more slowly due to the concavity of $g_\ell$.
+
+\textbf{(iii) Heterogeneity effect.} Consider two precision distributions with the same mean $\bar{\tau}^0$ but different variances. Under uniform attention $\alpha^*_{\ell,k} = A_\ell/K_\ell$ (optimal for identical signals), $\rho^{\text{uniform}}_\ell = (A_\ell/K_\ell)^\gamma$. Under a heterogeneous distribution with a dominant signal $k=1$, the optimal allocation concentrates attention: $\alpha^*_{\ell,1} > A_\ell/K_\ell > \alpha^*_{\ell,k}$ for $k > 1$. Because $g(\cdot)$ is concave, Jensen's inequality implies $\sum_k g(\alpha^*_{\ell,k}) \tau^0_{\ell,k}$ is higher under heterogeneous concentration, holding $\sum_k \tau^0_{\ell,k}$ fixed. Thus $\rho^{\text{heterogeneous}}_\ell > \rho^{\text{uniform}}_\ell$ and $\Delta_\ell$ is lower. \hfill $\square$
+
+\section{Proof of Proposition~\ref{prop:precision_response}}
+\label{app:proof_prop3}
+
+From the recursive structure (Equation~\eqref{eq:recursive_precision}), the top-layer precision satisfies:
+\begin{equation*}
+\tau^*_L = \rho_{L-1} \cdot \tau^*_{L-1} + \sum_{k=1}^{K_L} g_L(\alpha^*_{L,k}) \tau^0_{L,k},
+\end{equation*}
+with $\tau^*_0 = \tau^0_0$ and $\rho_\ell \in [0,1)$ for any finite $A_\ell$. Define the first difference $\Delta \tau^*_L \equiv \tau^*_L(L+1) - \tau^*_L(L)$.
+
+Adding a layer increases the chain length but also adds a new precision source. The net effect is:
+\begin{equation*}
+\Delta \tau^*_L = \underbrace{\rho_L \cdot \tau^*_L}_{\text{updated inherited precision}} + \underbrace{\sum_{k=1}^{K_{L+1}} g_{L+1}(\alpha^*_{L+1,k}) \tau^0_{L+1,k}}_{\text{new layer's contribution}} - \tau^*_L.
+\end{equation*}
+Since $\rho_L < 1$, the first term is less than $\tau^*_L$. The second term is bounded above by the first-best precision. For any interior solution (finite $A_{L+1}$), the loss from compression exceeds the gain from the new layer, so $\Delta \tau^*_L < 0$.
+
+For the second difference, each additional layer reduces both the inherited precision and the marginal contribution of the new layer. Hence:
+\begin{equation*}
+\Delta \tau^*_L(L+1) - \Delta \tau^*_L(L) < 0,
+\end{equation*}
+which is the discrete analog of the second derivative being negative. \hfill $\square$
+
+\section{Proof of Proposition~\ref{prop:cost_min}}
+\label{app:proof_prop4}
+
+\textbf{Step 1: Define the objective.} Let $\Pi(L) = V_L(\tau^*_L) - \sum_{\ell=0}^{L-1} c_\ell(A_\ell)$ denote the principal's net value when the chain has $L$ layers.
+
+\textbf{Step 2: Concavity of $\tau^*_L$.} From Proposition~\ref{prop:geometric_decay}, the first difference $\Delta \tau^*_L \equiv \tau^*_L(L+1) - \tau^*_L(L) < 0$, and the second difference is also negative. Hence $\tau^*_L$ is strictly concave on the discrete domain.
+
+\textbf{Step 3: Concavity of $V_L(\tau^*_L)$.} The value function $V_L(\cdot)$ is strictly increasing and strictly concave. The composition of a strictly increasing concave function with a strictly concave function is strictly concave. Hence $V_L(\tau^*_L(L))$ is strictly concave in $L$.
+
+\textbf{Step 4: Convexity of costs.} The cost term $C(L) = \sum_{\ell=0}^{L-1} c_\ell(A_\ell)$ is linear in $L$ when budgets are fixed. If budgets increase with depth, the cost is convex because $c_\ell(\cdot)$ is convex.
+
+\textbf{Step 5: Sum of concave functions.} The sum of strictly concave functions is strictly concave. Hence $\Pi(L) = V_L(\tau^*_L(L)) - C(L)$ is strictly concave on $\{0, 1, 2, \ldots\}$.
+
+\textbf{Step 6: Boundary behavior.} At $L = 0$, $\Pi(0) = V_0(\tau^0_0) > -\infty$. As $L \to \infty$, $\tau^*_L \to 0$ because $\rho_\ell < 1$ and the product $\prod_{\ell=0}^{L-1} \rho_\ell \to 0$ geometrically. Hence $V_L(\tau^*_L) \to V_L(0)$, while $C(L) \to +\infty$. Therefore $\lim_{L \to \infty} \Pi(L) = -\infty$.
+
+\textbf{Step 7: Existence of unique maximizer.} A strictly concave function on a discrete domain with $\Pi(0) > -\infty$ and $\lim_{L \to \infty} \Pi(L) = -\infty$ has a unique finite maximizer. \hfill $\square$
+
+\section{Proof of Proposition~\ref{prop:front_loading}}
+\label{app:proof_prop5}
+
+\textbf{Step 1: Discrete supermodularity.} Let $\Pi(L; A_\ell) \equiv V_L(\tau^*_L(A_\ell)) - \sum_{j=0}^{L-1} c_j(A_j)$ denote the principal's net value. We show that $\Pi$ is supermodular in $(L, A_\ell)$ on $\mathbb{N} \times \mathbb{R}_+$.
+
+\textbf{Step 2: Decompose the difference.} For any $L \geq 0$ and $A'_\ell > A_\ell$:
+\begin{align*}
+\Delta_L \Pi(L; A'_\ell) - \Delta_L \Pi(L; A_\ell) &= \bigl[V_{L+1}(\tau^*_{L+1}(A'_\ell)) - V_{L+1}(\tau^*_{L+1}(A_\ell))\bigr] \\
+&\quad - \bigl[V_L(\tau^*_L(A'_\ell)) - V_L(\tau^*_L(A_\ell))\bigr].
+\end{align*}
+
+\textbf{Step 3: Sign of each term.} The top-layer precision with $L+1$ layers is:
+\begin{equation*}
+\tau^*_{L+1}(A_\ell) = \rho_L(A_\ell) \cdot \tau^*_L + \sum_{k=1}^{K_{L+1}} g_{L+1}(\alpha^*_{L+1,k}) \tau^0_{L+1,k}.
+\end{equation*}
+From Proposition~\ref{prop:distortion_comp_statics}, $\partial \rho_\ell / \partial A_\ell > 0$. Hence $\tau^*_{L+1}(A'_\ell) > \tau^*_{L+1}(A_\ell)$, and since $V_{L+1}(\cdot)$ is increasing, term (i) $> 0$.
+
+Term (ii) is similarly positive: a larger budget at layer $\ell$ raises the precision transmitted to all downstream layers.
+
+\textbf{Step 4: Compare the gains.} The budget increase at layer $\ell$ affects all layers $j > \ell$ through the transmission chain. At layer $L+1$, the effect is amplified by the additional layer of compounding. Because both $V_{L+1}$ and $V_L$ are increasing and concave, and the precision gain is larger at $L+1$ than at $L$, the difference (i) $-$ (ii) $> 0$.
+
+\textbf{Step 5: Apply Topkis's theorem.} The cost term does not depend on $A_\ell$, so it does not affect the cross-difference. Since $\Delta_L \Pi(L; A'_\ell) > \Delta_L \Pi(L; A_\ell)$, the objective is supermodular in $(L, A_\ell)$. By Topkis's monotonicity theorem, $L^*(A_\ell) \equiv \arg\max_L \Pi(L; A_\ell)$ is increasing in $A_\ell$. \hfill $\square$
+
+\section{Proof of Proposition~\ref{prop:precision_path}}
+\label{app:proof_precision_path}
+
+\paragraph{Step 1: Derivation of the recurrence.}
+Under uniform technology and uniform attention budgets ($A_\ell = A$ for all $\ell$, so $\eta_\ell = \eta$ by Assumptions~\ref{ass:state_signals}--\ref{ass:endogenous_eta}), the new signal contribution at layer $\ell$ is $\sum_{k=1}^{K} g(\alpha^*_k) \tau^0_k \eta^\ell = C\eta^\ell$, where $C$ is defined in \eqref{eq:C_constant}. Substituting into \eqref{eq:recursive_precision} yields \eqref{eq:recursive_tau_unified}.
+
+\paragraph{Step 2: Closed-form solution.}
+Equation~\eqref{eq:recursive_tau_unified} is a first-order linear non-homogeneous difference equation.
+
+\textit{Case 1: $\eta \neq \rho$.} The homogeneous solution is $\tau^{(h)}_{\ell} = A \rho^{\ell}$. Guessing a particular solution $\tau^{(p)}_{\ell} = B \eta^{\ell}$ and substituting:
+\begin{equation*}
+B\eta^{\ell} = \rho B \eta^{\ell-1} + C\eta^{\ell}
+\quad\Longrightarrow\quad
+B = \frac{C\eta}{\eta - \rho}.
+\end{equation*}
+Applying $\tau^{*}_{0} = A + B$ and solving for $\tau^{*}_{L}$ yields \eqref{eq:tau_star_L}.
+
+\textit{Case 2: $\eta = \rho$.} The recurrence becomes $\tau^{*}_{\ell} = \eta \tau^{*}_{\ell-1} + C\eta^{\ell}$. Defining $u_{\ell} \equiv \tau^{*}_{\ell}/\eta^{\ell}$, we have $u_{\ell} = u_{\ell-1} + C$, which telescopes to $u_{\ell} = \tau^{*}_{0} + C\ell$. Hence $\tau^{*}_{L} = \eta^{L}(\tau^{*}_{0} + CL)$.
+
+\paragraph{Step 3: Vanishing precision (all cases).}
+Since $\rho \in (0,1)$ and $\eta \leq \bar{\eta} < 1$ (by Assumption~\ref{ass:endogenous_eta}), both $\rho^{L} \to 0$ and $\eta^{L} \to 0$. In all three cases, $\lim_{L\to\infty} \tau^{*}_{L} = 0$. The bound $\bar{\eta} < 1$ is the structural reason why precision vanishes even with unlimited attention budgets.
+
+\paragraph{Step 4: Shape characterization.}
+From \eqref{eq:recursive_tau_unified}, the layer-to-layer change is
+\begin{equation}\label{eq:app_delta_tau}
+\Delta_{\ell} \equiv \tau^{*}_{\ell} - \tau^{*}_{\ell-1} = -(1-\rho)\tau^{*}_{\ell-1} + C\eta^{\ell}.
+\end{equation}
+
+\textit{Subcase (i): $\eta < \rho$.} The $\rho^{\ell}$ term dominates the closed-form solution for large $\ell$. Since $\rho > \eta$, the negative term $-(1-\rho)\tau^{*}_{\ell-1}$ (which decays as $\rho^{\ell-1}$) eventually dominates the positive term $C\eta^{\ell}$ (which decays as $\eta^{\ell}$). Thus $\Delta_{\ell} < 0$ for all $\ell \geq \bar{L}_1$. For small $\ell$, however, the positive term may dominate if $\tau^{*}_{0}$ is small relative to $C\eta$, causing an initial increase. The path is therefore hump-shaped.
+
+\textit{Subcase (ii): $\eta > \rho$.} As $\ell \to \infty$, $\tau^{*}_{\ell-1} \sim C\eta^{\ell}/(\eta-\rho)$. Substituting into \eqref{eq:app_delta_tau}:
+\begin{equation*}
+\Delta_{\ell} \sim C\eta^{\ell}\left(1 - \frac{1-\rho}{\eta-\rho}\right) = C\eta^{\ell}\frac{\eta - 1}{\eta - \rho} < 0,
+\end{equation*}
+since $\eta < 1$ and $\eta > \rho$. The sequence is eventually decreasing.
+
+\textit{Subcase (iii): $\eta = \rho$.} Using $\tau^{*}_{\ell} = \eta^{\ell}(\tau^{*}_{0} + C\ell)$:
+\begin{equation*}
+\Delta_{\ell} = \eta^{\ell-1}\bigl[(\eta-1)\tau^{*}_{0} + C - C(1-\eta)\ell\bigr].
+\end{equation*}
+Since $\eta < 1$, the bracket is affine in $\ell$ with negative slope $-C(1-\eta) < 0$. Hence $\Delta_{\ell} < 0$ whenever $\ell > \tau^{*}_{0}/C + 1/(1-\eta)$. \hfill $\blacksquare$
+
+\section{Proof of Proposition~\ref{prop:cost_depth}}
+\label{app:proof_prop6}
+
+\textbf{Step 1: Discrete submodularity.} Let $\Pi(L; \kappa_\ell) \equiv V_L(\tau^*_L) - \sum_{j=0}^{L-1} c_j(A_j; \kappa_\ell)$, where $c_j(A_j; \kappa_\ell) = \kappa_\ell A_\ell + \frac{\phi_\ell}{2} A_\ell^2$. We show that $\Pi$ is submodular in $(L, \kappa_\ell)$.
+
+\textbf{Step 2: Cost effect on the marginal value.} The difference in marginal values is:
+\begin{multline*}
+\Delta_L \Pi(L; \kappa'_\ell) - \Delta_L \Pi(L; \kappa_\ell) = -\bigl[c_\ell(A_\ell; \kappa'_\ell) - c_\ell(A_\ell; \kappa_\ell)\bigr] \cdot \mathbf{1}_{\{\ell < L+1\}} \\
+= -(\kappa'_\ell - \kappa_\ell) A_\ell \cdot \mathbf{1}_{\{\ell < L+1\}} \leq 0.
+\end{multline*}
+For $\ell < L+1$, a higher cost reduces the marginal net value of adding the $(L+1)$-th layer.
+
+\textbf{Step 3: Monotonicity.} Because $\Delta_L \Pi(L; \kappa'_\ell) \leq \Delta_L \Pi(L; \kappa_\ell)$, the objective is submodular in $(L, \kappa_\ell)$. By Topkis's theorem, $L^*(\kappa_\ell) \equiv \arg\max_L \Pi(L; \kappa_\ell)$ is decreasing in $\kappa_\ell$. \hfill $\square$
+
+\section{Proof of Proposition~\ref{prop:finite_depth}}
+\label{app:proof_prop7}
+
+\renewcommand{\theequation}{A.7.\arabic{equation}}
+\setcounter{equation}{0}
+
+This appendix provides the complete proof of Proposition~\ref{prop:finite_depth}, which establishes the finiteness of optimal depth under diminishing signal quality. The proof proceeds in five logical steps.
+
+\paragraph{Step 1: Recursive structure.}
+Under uniform technology ($g_{\ell} = g$, $c_{\ell} = c$, $K_{\ell} = K$, $A_{\ell} = A$, so $\eta_{\ell} = \eta$ for all $\ell$) and Assumptions~\ref{ass:state_signals}--\ref{ass:endogenous_eta}, the equilibrium posterior precision at layer $\ell$ evolves according to:
+\begin{equation}\label{eq:app_recursive}
+\tau^{*}_{\ell} = \underbrace{\rho \cdot \tau^{*}_{\ell-1}}_{\text{precision carried forward}} + \underbrace{\sum_{k=1}^{K} g\bigl(\alpha^{*}_{k}\bigr) \tau^{0}_{\ell,k}}_{\text{new signal contribution}}.
+\end{equation}
+By Assumptions~\ref{ass:state_signals}--\ref{ass:endogenous_eta} with uniform budgets ($\eta_\ell = \eta$), $\tau^{0}_{\ell,k} = \tau^{0}_{k} \eta^{\ell}$, so the new signal contribution becomes:
+\begin{equation}\label{eq:app_C_def}
+\sum_{k=1}^{K} g\bigl(\alpha^{*}_{k}\bigr) \tau^{0}_{k} \eta^{\ell} = C \eta^{\ell},
+\end{equation}
+where $C$ is defined in \eqref{eq:C_constant}. The initial condition is $\tau^{*}_{0} = \sum_{k=1}^{K} \tau^{0}_{0,k} = \sum_{k=1}^{K} \tau^{0}_{k}$. Thus \eqref{eq:app_recursive} simplifies to:
+\begin{equation}\label{eq:app_simplified_recurrence}
+\tau^{*}_{\ell} = \rho \tau^{*}_{\ell-1} + C \eta^{\ell}, \qquad \tau^{*}_{0} \text{ given}.
+\end{equation}
+
+\paragraph{Step 2: Closed-form solution.}
+Equation~\eqref{eq:app_simplified_recurrence} is a first-order linear non-homogeneous difference equation with varying coefficients in the forcing term.
+
+\textit{Case 1: $\eta \neq \rho$.} Decompose $\tau^{*}_{\ell} = \tau^{(h)}_{\ell} + \tau^{(p)}_{\ell}$. The homogeneous solution is $\tau^{(h)}_{\ell} = A \rho^{\ell}$, and the ansatz $\tau^{(p)}_{\ell} = B \eta^{\ell}$ yields:
+\begin{equation*}
+B\eta^{\ell} = \rho B \eta^{\ell-1} + C\eta^{\ell}
+\quad\Longrightarrow\quad
+B\eta = \rho B + C\eta
+\quad\Longrightarrow\quad
+B = \frac{C\eta}{\eta - \rho}.
+\end{equation*}
+Applying the initial condition $\tau^{*}_{0} = A + B$:
+\begin{equation}
+A = \tau^{*}_{0} - \frac{C\eta}{\eta - \rho}.
+\end{equation}
+Therefore, for all $L \geq 0$:
+\begin{equation}\label{eq:app_closed_form}
+\tau^{*}_{L} = \rho^{L}\tau^{*}_{0} + \frac{C\eta}{\eta - \rho}\bigl(\eta^{L} - \rho^{L}\bigr),
+\end{equation}
+which coincides with equation~\eqref{eq:tau_star_L} in the main text.
+
+\textit{Case 2: $\eta = \rho$.} The recurrence becomes $\tau^{*}_{\ell} = \eta \tau^{*}_{\ell-1} + C\eta^{\ell}$. Dividing both sides by $\eta^{\ell}$:
+\begin{equation}
+\frac{\tau^{*}_{\ell}}{\eta^{\ell}} = \frac{\tau^{*}_{\ell-1}}{\eta^{\ell-1}} + C.
+\end{equation}
+Defining $u_{\ell} \equiv \tau^{*}_{\ell}/\eta^{\ell}$, this becomes $u_{\ell} = u_{\ell-1} + C$, which telescopes to $u_{\ell} = u_{0} + C\ell = \tau^{*}_{0} + C\ell$. Restoring $\tau^{*}_{L}$:
+\begin{equation}\label{eq:app_equal_case}
+\tau^{*}_{L} = \eta^{L}\bigl(\tau^{*}_{0} + CL\bigr).
+\end{equation}
+
+\paragraph{Step 3: Vanishing precision (Part (i)).}
+We establish that $\lim_{L\to\infty} \tau^{*}_{L} = 0$ in all cases.
+
+For $\eta \neq \rho$, since $\rho, \eta \in (0,1)$:
+\begin{equation}
+\lim_{L\to\infty} \rho^{L} = 0, \qquad \lim_{L\to\infty} \eta^{L} = 0,
+\end{equation}
+so both terms in \eqref{eq:app_closed_form} converge to zero. For $\eta = \rho$, the linear growth of $\tau^{*}_{0} + CL$ is asymptotically dominated by the exponential decay of $\eta^{L}$:
+\begin{equation}
+\lim_{L\to\infty} \eta^{L}\bigl(\tau^{*}_{0} + CL\bigr) = 0,
+\end{equation}
+since $\lim_{L\to\infty} L^{m} \eta^{L} = 0$ for any $m \geq 0$ and $\eta \in (0,1)$. This completes Part (i).
+
+\paragraph{Step 4: Eventual monotonic decline (Part (ii)).}
+From \eqref{eq:app_simplified_recurrence}, the increment is:
+\begin{equation}\label{eq:app_delta}
+\Delta_{\ell} \equiv \tau^{*}_{\ell} - \tau^{*}_{\ell-1} = -(1-\rho)\tau^{*}_{\ell-1} + C\eta^{\ell}.
+\end{equation}
+We prove $\Delta_{\ell} < 0$ for all sufficiently large $\ell$ by considering three subcases.
+
+\textit{Subcase 4a: $\eta > \rho$.} From \eqref{eq:app_closed_form}, as $\ell \to \infty$, the term $\eta^{\ell}$ dominates $\rho^{\ell}$, yielding:
+\begin{equation}
+\tau^{*}_{\ell-1} \sim \frac{C\eta^{\ell}}{\eta - \rho} \qquad (\ell \to \infty).
+\end{equation}
+Substituting into \eqref{eq:app_delta}:
+\begin{equation}
+\Delta_{\ell} \sim -(1-\rho)\frac{C\eta^{\ell}}{\eta-\rho} + C\eta^{\ell}
+= C\eta^{\ell}\left(\frac{\eta - \rho - 1 + \rho}{\eta - \rho}\right)
+= C\eta^{\ell}\frac{\eta - 1}{\eta - \rho}.
+\end{equation}
+Since $\eta < 1$, the numerator $\eta - 1 < 0$, while the denominator $\eta - \rho > 0$. Hence $\Delta_{\ell} \sim \text{[negative constant]} \times \eta^{\ell} < 0$ for all large $\ell$.
+
+\textit{Subcase 4b: $\eta < \rho$.} Now $\rho^{\ell}$ dominates, giving:
+\begin{equation}
+\tau^{*}_{\ell-1} \sim \left(\tau^{*}_{0} + \frac{C\eta}{\rho - \eta}\right)\rho^{\ell-1} \qquad (\ell \to \infty).
+\end{equation}
+Substituting into \eqref{eq:app_delta}:
+\begin{equation}
+\Delta_{\ell} \sim -(1-\rho)\left(\tau^{*}_{0} + \frac{C\eta}{\rho-\eta}\right)\rho^{\ell-1} + C\eta^{\ell}.
+\end{equation}
+Since $\rho > \eta$, the negative term decays as $\rho^{\ell-1}$ while the positive term decays as $\eta^{\ell}$. The former decays strictly slower and has a negative coefficient, so it dominates for large $\ell$. Thus $\Delta_{\ell} < 0$ for all $\ell \geq \bar{L}$ with:
+\begin{equation}
+\bar{L} = \inf\left\{\ell \in \mathbb{N} : \ell > \frac{\ln\!\left(\frac{(1-\rho)}{C}\bigl(\tau^{*}_{0} + \frac{C\eta}{\rho-\eta}\bigr)\right)}{\ln(\eta/\rho)}\right\} + 1,
+\end{equation}
+which is finite since $\ln(\eta/\rho) < 0$.
+
+\textit{Subcase 4c: $\eta = \rho$.} Using \eqref{eq:app_equal_case}:
+\begin{align}
+\Delta_{\ell} &= \eta^{\ell}(\tau^{*}_{0} + C\ell) - \eta^{\ell-1}\bigl(\tau^{*}_{0} + C(\ell-1)\bigr) \notag \\
+&= \eta^{\ell-1}\bigl[\underbrace{(\eta-1)\tau^{*}_{0}}_{< 0} + \underbrace{C(1 - (1-\eta)\ell)}_{\to -\infty}\bigr].
+\end{align}
+Since the bracket is affine in $\ell$ with negative slope $-C(1-\eta) < 0$, there exists:
+\begin{equation}
+\bar{L} = \left\lfloor\frac{\tau^{*}_{0}}{C} + \frac{1}{1-\eta}\right\rfloor + 2,
+\end{equation}
+such that $\Delta_{\ell} < 0$ for all $\ell \geq \bar{L}$. This completes Part (ii).
+
+\paragraph{Step 5: Finite optimal depth (Part (iii)).}
+Strict monotonicity of $V(\cdot)$ and Part (ii) together imply:
+\begin{equation}
+V(\tau^{*}_{\ell}) < V(\tau^{*}_{\ell-1}) \quad \text{for all } \ell \geq \bar{L}.
+\end{equation}
+Thus $\{V(\tau^{*}_{\ell})\}_{\ell=0}^{\infty}$ is strictly decreasing beyond $\bar{L}$, so its maximum is attained at some $L^{*} \in \{0, 1, \ldots, \bar{L}\}$.
+
+When the marginal attention cost is $\kappa \geq 0$, adding any layer $\ell \geq \bar{L}$ yields net marginal benefit:
+\begin{equation}
+\underbrace{V(\tau^{*}_{\ell}) - V(\tau^{*}_{\ell-1})}_{< 0} - \kappa < 0,
+\end{equation}
+which is strictly negative. Hence no planner would ever choose $\ell > \bar{L}$, and $L^{*} \leq \bar{L} < \infty$ regardless of how small $\kappa$ is. This completes the proof of Proposition~\ref{prop:finite_depth}. \hfill $\blacksquare$
+
+\vspace{1.5em}
+\begin{remark}[Comparative statics on $\bar{L}$]
+The threshold $\bar{L}$ beyond which precision decreases is increasing in the baseline precision $\tau^{*}_{0}$ and decreasing in the signal contribution $C$ and the attenuation factor $\eta$. Specifically, a higher $\eta$ (better signal preservation) pushes $\bar{L}$ outward, allowing more layers before returns turn negative. In the limit $\eta \to 1$, the threshold diverges, recovering the original model where infinite depth can be optimal.
+\end{remark}
+
+\begin{remark}[Comparison to the no-attenuation case]
+When $\eta = 1$ (no signal degradation), the recurrence \eqref{eq:app_simplified_recurrence} becomes $\tau^{*}_{\ell} = \rho \tau^{*}_{\ell-1} + C$, with solution $\tau^{*}_{L} = \rho^{L}\tau^{*}_{0} + C(1-\rho^{L})/(1-\rho) \to C/(1-\rho) > 0$. The precision converges to a positive limit, so $V(\tau^{*}_{L})$ converges to $V(C/(1-\rho)) > V(0)$ from below, and infinite depth is optimal whenever $\kappa < V(C/(1-\rho)) - \lim_{L\to\infty}V(\tau^{*}_{L-1}) = 0^{+}$. The diminishing signal quality assumption ($\eta < 1$) is therefore \emph{necessary and sufficient} for the finite-depth result under uniform technology.
+\end{remark}

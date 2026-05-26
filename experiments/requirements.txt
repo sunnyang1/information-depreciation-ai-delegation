@@ -1,0 +1,30 @@
+# LLM实验环境依赖
+# 安装方式: pip install -r requirements.txt
+# 或直接使用: bash setup_env.sh 一键配置
+
+# ========== 核心框架 ==========
+torch==2.1.0
+torchvision==0.16.0
+torchaudio==2.1.0
+transformers==4.35.0
+datasets==2.14.0
+accelerate==0.24.0
+
+# ========== 量化与优化 ==========
+bitsandbytes==0.41.0
+vllm==0.2.1
+
+# ========== 数据处理 ==========
+scipy
+numpy
+tqdm
+pandas
+
+# ========== 可视化 ==========
+matplotlib
+
+# ========== 可选依赖 ==========
+# sentencepiece        # 部分模型需要 (如 LLaMA)
+# protobuf             # 部分模型需要
+# einops               # 部分模型架构需要
+# flash-attn           # 注意力机制加速 (需CUDA编译)

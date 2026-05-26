@@ -1,0 +1,48 @@
+\section{Extensions}
+\label{sec:extensions}
+
+We present four extensions that demonstrate the robustness and flexibility of the attention-allocation framework.
+
+\subsection{Endogenous Attention Technology}
+\label{subsec:endogenous_tech}
+
+So far we have treated the attention technology $g_\ell(\cdot)$ as exogenous. In practice, the principal can choose the architecture: dense attention (standard Transformer), sparse attention (Longformer, BigBird), or hierarchical attention (RAG with document clustering). These choices correspond to different power-function parameters $\gamma_\ell$ and different functional forms.
+
+Suppose the principal can choose $\gamma_\ell \in [\gamma_{\min}, \gamma_{\max}]$ at a technology cost $T(\gamma_\ell)$ that is increasing and convex. The augmented organization-design problem is:
+\begin{equation}\label{eq:endogenous_tech}
+\max_{L, \{A_\ell, \gamma_\ell\}} V_L(\tau^*_L) - \sum_{\ell=0}^{L-1} \Bigl[c_\ell(A_\ell) + T(\gamma_\ell)\Bigr].
+\end{equation}
+Because $\partial \rho_\ell / \partial \gamma_\ell > 0$ (better technology raises the transmission factor), there is a trade-off: investing in better attention technology at layer $\ell$ raises the precision of all downstream layers but at a direct cost. The optimal technology profile depends on the position in the chain. Front layers benefit more from technology investment because their precision is compounded, so the optimal $\gamma^*_\ell$ is decreasing in $\ell$.
+
+\textbf{Application: FlashAttention.} FlashAttention reduces memory overhead, effectively increasing the attention budget $A_\ell$ for a given hardware cost. In our framework, this is a simultaneous increase in $A_\ell$ and $\gamma_\ell$. The optimal depth increases, but the effect on $\rho_\ell$ depends on whether the technology improvement is uniform across layers.
+
+\subsection{Strategic Information Transmission}
+\label{sec:strategic}
+
+In the baseline model, each layer honestly reports its posterior to the next layer. In practice, agents may have incentives to distort information. For example, an upstream layer may want to hide unfavorable signals to avoid triggering costly downstream actions.
+
+This can be modeled using the Bayesian Persuasion framework \citep{kamenica2011bayesian}. Layer $\ell$ chooses a signaling strategy to influence layer $\ell+1$'s action. The key difference from standard persuasion is that the signal is constrained by the attention budget: layer $\ell$ cannot transmit signals it did not attend to. The optimal persuasion strategy therefore interacts with the attention allocation: signals that are attended to can be strategically distorted, while ignored signals are simply absent.
+
+Dynamic information transmission \citep{ely2017beeps, renault2017optimal} studies how senders strategically control information flow. While we focus on non-strategic loss from attention constraints, the same tools apply when agents distort information strategically.
+
+When strategic distortion is possible, the principal may prefer to reduce the number of signals $K_\ell$ or increase the budget $A_\ell$ to ensure that the layer attends to all relevant signals (eliminating the ``hiding by ignoring'' possibility). This provides an alternative rationale for signal reduction that complements the precision-based rationale in Proposition \ref{prop:cost_min}.
+
+\subsection{Parallel Processing: Trees versus Chains}
+\label{subsec:trees}
+
+The baseline model assumes a chain architecture: each layer feeds a single downstream layer. In practice, many LLM systems use tree architectures: a router dispatches signals to multiple parallel agents, and their outputs are aggregated before the next stage.
+
+Consider a tree with $M$ parallel branches at layer $\ell$. Each branch $m$ receives a subset of signals and produces a posterior $\tau^*_{\ell,m}$. The aggregate posterior is:
+\begin{equation}\label{eq:tree_posterior}
+\tau^*_\ell = \sum_{m=1}^{M} w_m \tau^*_{\ell,m},
+\end{equation}
+where $w_m$ are aggregation weights. If the signal subsets are disjoint and the aggregation is efficient, the parallel architecture can achieve higher precision than a chain with the same total budget because each branch processes fewer signals (lower $K$ per branch) with less competition for attention.
+
+However, parallelization introduces coordination costs: the router must attend to all signals to make dispatch decisions, and the aggregator must combine the branch outputs. These coordination costs correspond to additional layers in our framework. The optimal architecture (chain vs.~tree vs.~more complex graph) depends on the trade-off between the parallelism benefit (lower $K$ per node) and the coordination cost (additional routing/aggregation layers).
+
+\subsection{Human-AI Hybrid Chains}
+\label{subsec:human_ai}
+
+When some layers are staffed by human agents with different attention technologies, the transmission factor becomes layer-specific: $\rho^{\text{human}}_\ell$ vs.~$\rho^{\text{AI}}_\ell$. The optimal chain may involve alternating human and AI layers to exploit comparative advantage in information processing.
+
+\textbf{Example.} In medical diagnosis, a human doctor may have $\gamma_{\text{human}} = 0.6$ (can effectively integrate a small number of key symptoms) while an LLM has $\gamma_{\text{LLM}} = 0.35$ (processes many lab results but with diminishing returns). The optimal chain may place the human at the top layer (final diagnosis) and the LLM at the bottom layer (lab result aggregation), rather than the reverse.

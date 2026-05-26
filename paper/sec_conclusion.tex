@@ -1,0 +1,34 @@
+\section{Conclusion}
+\label{sec:conclusion}
+
+\subsection{Contributions}
+
+We have developed a micro-founded theory of optimal organizational depth in AI delegation chains. The central insight is that \emph{information depreciation}---the degradation of signal quality through repeated algorithmic processing---compounds through a multi-layer chain, driving a finite, interior optimal depth even when the marginal cost of attention approaches zero.
+
+Our framework makes three contributions relative to the existing literature on organizational economics:
+
+First, we introduce the concept of information depreciation into organizational hierarchy theory. The transmission factor $\rho_\ell$ is the ratio of achieved posterior precision to first-best precision, and it is derived within the class of attention technologies rather than being assumed. This connects the organizational model to the Bayesian micro-foundations of rational inattention \citep{sims2003implications}.
+
+Second, information depreciation provides a complementary mechanism to traditional coordination-cost explanations for the limits of delegation. Even as API costs fall to zero, the compounding of endogenous precision leakage and exogenous signal degradation at each layer ensures that information is progressively lost. This implies that Coasian arguments about the cost of coordination do not fully explain the boundaries of AI organizations: information depreciation operates alongside, and independently of, transaction costs.
+
+Third, we provide a calibration framework that maps the model's parameters to directly observable LLM technology: context window lengths, API pricing, and benchmark accuracy. The calibration demonstrates that the key predictions---finite optimal depth, compounding precision loss, and the irrelevance of API costs for depth---hold for empirically plausible parameter values. We derive five testable predictions (Section~\ref{subsec:predictions}) that await empirical evaluation as multi-agent benchmark data become available.
+
+\subsection{Policy Implications}
+
+The model has direct implications for the design of AI systems and the regulation of AI services:
+
+\begin{itemize}
+\item \textbf{System designers} should front-load attention capacity: the largest models (largest context windows) should be deployed at the earliest layer, where precision has a multiplicative effect on all downstream outputs.
+\item \textbf{Regulators} assessing AI system reliability should focus on depth as a key risk factor. A chain of four LLMs is not merely four times more expensive than a single LLM; it is exponentially less precise, and that precision loss is structurally unavoidable with current attention technology.
+\end{itemize}
+
+\subsection{Limitations and Future Directions}
+
+Our model abstracts from several important features of real-world AI systems:
+
+\begin{enumerate}
+\item \textbf{Multi-dimensional states.} We assume a scalar state $\omega$ and scalar precision $\tau$. Generalizing to a vector state with a precision matrix would allow the model to capture the heterogeneity of information across different dimensions.
+\item \textbf{Strategic behavior.} We assume honest transmission of posteriors. Incorporating strategic information transmission (as in Section~\ref{sec:strategic}) would generate a richer set of predictions about optimal monitoring and verification architectures.
+\item \textbf{Endogenous architectures.} We take the chain structure as given. A fully general model would jointly optimize over chains, trees, and more complex graphs, as sketched in Section~\ref{subsec:trees}.
+\item \textbf{Empirical validation.} While we have proposed five testable predictions (Section~\ref{subsec:predictions}), their empirical evaluation remains for future research. The rapid expansion of multi-agent benchmarks and the availability of API-level data from major providers make this a promising avenue. We have not conducted original empirical analysis; the calibration exercises in Section~\ref{sec:calibration} use publicly available benchmark statistics, and the testable predictions are offered as guidance for future empirical work rather than as validated findings.
+\end{enumerate}

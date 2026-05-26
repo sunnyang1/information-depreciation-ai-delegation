@@ -1,0 +1,298 @@
+\section{Multi-Layer Analysis and Optimal Depth}
+\label{sec:multi}
+
+We now extend the analysis to multiple layers, derive the optimal organizational depth, and characterize the optimal budget allocation.
+
+\subsection{The Endogenous Transmission Factor}
+\label{subsec:transmission_factor}
+
+Before analyzing information transmission across layers, we formally define the endogenous transmission factor and relate it to the single-layer distortion measure.
+
+Recall from Definition~\ref{def:single_layer_distortion} that the single-layer distortion measure is $\tilde{\delta}_\ell = 1 - \Delta_\ell$. In the multi-layer context, it is more convenient to work directly with the ratio of achieved posterior precision to first-best precision:
+
+\begin{definition}[Endogenous Transmission Factor]\label{def:transmission_factor}
+The endogenous transmission factor from layer $\ell$ to layer $\ell+1$ is
+\begin{equation}\label{eq:transmission_factor}
+\rho_\ell \equiv \frac{\tau^*_\ell}{\tau^{\text{FB}}_\ell} = \frac{\tau^{\text{prior}}_\ell + \sum_{k=1}^{K_\ell} g_\ell(\alpha^*_{\ell,k}) \tau^0_{\ell,k}}{\tau^{\text{prior}}_\ell + \sum_{k=1}^{K_\ell} \tau^0_{\ell,k}} \in [0,1],
+\end{equation}
+where $\tau^{\text{FB}}_\ell$ is the first-best posterior precision and $\tau^*_\ell$ is the achieved posterior precision under the optimal attention allocation.
+\end{definition}
+
+The transmission factor $\rho_\ell$ measures the fraction of first-best precision that survives layer $\ell$. When $\rho_\ell = 1$, all signals receive sufficient attention and no precision is lost. When $\rho_\ell < 1$, the attention budget forces the layer to ignore or under-process some signals, creating a precision leakage.
+
+\begin{remark}[From Exogenous to Endogenous]\label{rem:exog_to_endog}
+In previous work, the transmission factor was an exogenous parameter $\tau \in [0,1]$ that the modeler specified. In our framework, $\rho_\ell$ is endogenously determined by the attention-allocation problem: it depends on the budget $A_\ell$, the number of signals $K_\ell$, their precisions $\{\tau^0_{\ell,k}\}$, and the attention technology $g_\ell(\cdot)$. Importantly, $\rho_\ell$ is derived \emph{relative to the assumed attention technology $g_\ell(\cdot)$}---changing the functional form of $g_\ell$ would alter the numerical value of $\rho_\ell$ even holding all primitives fixed.
+\end{remark}
+
+\begin{remark}[Technology Dependence and Qualitative Robustness]\label{rem:rho_technology}
+The numerical value of $\rho_\ell$ depends on the specific attention technology $g_\ell(\cdot)$. Under the power-function specification $g_\ell(\alpha) = \alpha^\gamma$, a larger context window (higher $A_\ell$) raises $\rho_\ell$; under an alternative technology, the quantitative response may differ. However, the qualitative conclusions of our analysis---that optimal depth is finite and that budget allocation is front-loaded---do not depend on the specific functional form of $g_\ell(\cdot)$. All that is required is that $g_\ell$ be increasing and concave with $g'_\ell(0) > 0$.
+\end{remark}
+
+\subsection{Organizational Design: Optimal Budget Allocation}
+\label{subsec:budget_allocation}
+
+Before analyzing the finite-depth result, we first characterize the optimal budget allocation across layers. This is the model's most empirically testable prediction.
+
+Suppose the principal faces a total attention budget $B > 0$ that can be allocated across layers. For simplicity, consider a uniform technology profile where $g_\ell(\cdot) = g(\cdot)$, $c_\ell(\cdot) = c(\cdot)$, and $K_\ell = K$ for all $\ell$. The principal's problem is:
+\begin{equation}\label{eq:budget_allocation}
+\max_{L, \{A_\ell\}} V_L(\tau^*_L) \quad \text{s.t.} \quad \sum_{\ell=0}^{L} A_\ell \leq B, \quad A_\ell \geq 0.
+\end{equation}
+
+We compare three canonical budget-allocation strategies:
+
+\textbf{Strategy 1: Uniform allocation.} Set $A_\ell = B/(L+1)$ for all $\ell$. This is the simplest design: every layer receives the same context-window capacity.
+
+\textbf{Strategy 2: Front-loaded allocation.} Set $A_0 > A_1 > \cdots > A_L$. The bottom layers receive larger budgets because they process raw signals with the highest intrinsic precision. The intuition is that precision loss is most costly early in the chain: a unit of precision lost at layer 0 is compounded by all subsequent layers.
+
+\textbf{Strategy 3: Back-loaded allocation.} Set $A_0 < A_1 < \cdots < A_L$. The top layers receive larger budgets because they make the final decision and their precision directly enters the payoff.
+
+\begin{proposition}[Optimal Budget Allocation]\label{prop:front_loading}
+Under the uniform-technology assumption, the optimal budget allocation is front-loaded: $A^*_0 \geq A^*_1 \geq \cdots \geq A^*_L$.
+\end{proposition}
+
+\begin{proof}
+Consider two adjacent layers $\ell$ and $\ell+1$ with budgets $A_\ell$ and $A_{\ell+1}$. Define an alternative allocation that transfers $\varepsilon > 0$ from layer $\ell+1$ to layer $\ell$: $A'_\ell = A_\ell + \varepsilon$, $A'_{\ell+1} = A_{\ell+1} - \varepsilon$. We show that if $A_\ell = A_{\ell+1}$, then $\tau^*_L(A'_\ell, A'_{\ell+1}) > \tau^*_L(A_\ell, A_{\ell+1})$ for small $\varepsilon$.
+
+The transmission factor at layer $\ell$ increases: $\rho_\ell(A'_\ell) > \rho_\ell(A_\ell)$ because $\partial \rho_\ell / \partial A_\ell > 0$ (Proposition~\ref{prop:distortion_comp_statics}). This raises the inherited precision at all downstream layers $j > \ell$.
+
+The transmission factor at layer $\ell+1$ decreases: $\rho_{\ell+1}(A'_{\ell+1}) < \rho_{\ell+1}(A_{\ell+1})$. However, the inherited precision at layer $\ell+1$ is $\tau^{\text{prior}}_{\ell+1} = \rho_\ell \cdot \tau^*_\ell$, which increases because $\rho_\ell$ increases. For small $\varepsilon$, the increase in $\rho_\ell$ dominates the decrease in $\rho_{\ell+1}$ because the compounding effect amplifies the gain at layer $\ell$ across all downstream layers.
+
+Repeating the exchange argument for all adjacent pairs from $\ell = 0$ to $\ell = L-1$, any non-front-loaded allocation can be improved by shifting budget toward earlier layers. The only allocation immune to such improvements is the front-loaded one.
+\end{proof}
+
+\vspace{1em}
+\noindent\textbf{Practical Implications.}
+In LLM pipeline design, Proposition~\ref{prop:front_loading} implies that the largest model (largest context window) should be deployed at the earliest stage---the layer that processes the raw user query and initial retrieved documents. Smaller, faster models can be used at intermediate layers.
+
+This prediction aligns with the architecture of several prominent production multi-agent systems. \citet{openai2025deepresearch} deploys a large reasoning model (o3, 200K context window) for the initial query-understanding and web-retrieval phase, while using lighter models for intermediate synthesis steps. \textit{Manus} \citep{manus2025} assigns its largest model to the initial task-decomposition layer, where raw user intent must be parsed and mapped to a tool-execution plan. In open-source tool-use frameworks, \textit{OpenHands} \citep{openhands2024} and \textit{Devin} \citep{cognition2024devin} both place a frontier model at the entry point of the pipeline (code comprehension and planning), while delegating implementation steps to smaller specialized agents. Our model provides a theoretical justification for this engineering practice: the returns to attention capacity are highest at the bottom of the chain because precision lost there is amplified by every subsequent layer.
+
+\begin{remark}[Front-loading as an Empirical Signature]\label{rem:front_loading_empirical}
+The front-loading result is the model's most directly testable prediction. It does not require measuring the preservation parameters $(\underline{\eta}, \bar{\eta}, a)$ or the transmission factor $\rho_\ell$, which are difficult to observe in practice. Instead, it predicts a monotonic relationship between layer index and budget allocation that can be evaluated using only observable architectural choices: the model sizes or context-window lengths assigned to each layer of a multi-agent pipeline. We return to this prediction in Section~\ref{sec:empirics}, where we discuss how to bring it to data.
+\end{remark}
+
+\subsection{Information Transmission Across Layers}
+\label{subsec:info_transmission}
+
+Having characterized the optimal budget allocation, we now study how information propagates through the chain. This analysis reveals the dynamic forces that ultimately bound the optimal depth.
+
+In a chain with $L$ layers, the posterior precision at layer $\ell$ depends on the attention allocation at layer $\ell-1$ through the endogenous transmission factor $\rho_{\ell-1}$. The prior precision at layer $\ell$ is the achieved posterior precision at layer $\ell-1$:
+\begin{equation}\label{eq:prior_update}
+\tau^{\text{prior}}_\ell = \rho_{\ell-1} \cdot \tau^*_{\ell-1}(A_{\ell-1}), \quad \ell = 1, \ldots, L.
+\end{equation}
+With $\tau^{\text{prior}}_0 \equiv \tau^0_0$ (the raw signal precision at the bottom layer), the posterior precision at layer $\ell$ follows the recursive Bayesian-update structure:
+\begin{equation}\label{eq:recursive_precision}
+\tau^*_\ell = \tau^{\text{prior}}_\ell + \sum_{k=1}^{K_\ell} g_\ell(\alpha^*_{\ell,k}) \tau^0_{\ell,k}, \quad \text{with } \tau^{\text{prior}}_\ell = \rho_{\ell-1} \cdot \tau^*_{\ell-1}.
+\end{equation}
+
+Solving the recursion yields the cumulative precision at the top layer:
+\begin{equation}\label{eq:top_precision}
+\tau^*_L = \sum_{\ell=1}^{L} \sum_{k=1}^{K_\ell} g_\ell(\alpha^*_{\ell,k}) \tau^0_{\ell,k} \cdot \prod_{j=\ell}^{L-1} \rho_j + \tau^0_0 \cdot \prod_{j=0}^{L-1} \rho_j.
+\end{equation}
+Each layer $\ell$ contributes its local signal precision $g_\ell(\alpha^*_{\ell,k}) \tau^0_{\ell,k}$, weighted by the subsequent transmission losses $\prod_{j=\ell}^{L-1} \rho_j$.
+
+\vspace{1em}
+\noindent\textbf{Precision Dynamics under Information Depreciation.}
+We now characterize the dynamics of the precision path $\{\tau^*_\ell\}$ under the information depreciation model introduced in Assumptions~\ref{ass:state_signals} and~\ref{ass:endogenous_eta}. Recall that in this framework, the raw signal quality at layer $\ell$ is $\tau^0_{\ell,k} = \tau^0_k \cdot \eta_\ell^{\,\ell}$, where $\eta_\ell \in (\underline{\eta}, \bar{\eta})$ is the endogenous per-layer signal preservation rate at layer $\ell$, determined by the attention budget $A_\ell$ through equation~\eqref{eq:endogenous_eta}.
+
+To build intuition, consider first what happens when $\eta_\ell = 1$ for all $\ell$ (no signal degradation). Under uniform technology and uniform attention budgets ($g_\ell = g$, $c_\ell = c$, $K_\ell = K$, $\rho_\ell = \rho$, $A_\ell = A$, so $\eta_\ell = \eta$ constant), Equation~\eqref{eq:recursive_precision} becomes $\tau^*_\ell = \rho \tau^*_{\ell-1} + C$ for some constant $C > 0$, which converges to $\bar{\tau} = C/(1-\rho) > 0$ as $\ell \to \infty$. In this case, the precision path converges to a \emph{positive limit}: adding more layers continues to increase precision (albeit with diminishing returns), and infinite depth is optimal whenever API costs are below a threshold. The boundedness of depth, if any, comes solely from cost considerations, not from fundamental information limits.
+
+When $\eta_\ell < 1$, the dynamics change qualitatively. The following proposition characterizes the precision path under the information depreciation model. To maintain analytical transparency, we state the result for the uniform-technology case with potentially non-uniform attention budgets; the special case of uniform budgets ($A_\ell = A$, so $\eta_\ell = \eta$) recovers the baseline formula.
+
+\begin{proposition}[Precision Path Characterization]\label{prop:precision_path}
+Under the information depreciation model (Assumptions~\ref{ass:state_signals}--\ref{ass:endogenous_eta} with $\eta_\ell \in (\underline{\eta}, \bar{\eta})$) and uniform technology ($g_\ell = g$, $c_\ell = c$, $K_\ell = K$, $\rho_\ell = \rho$ for all $\ell$), define the composite signal contribution constant
+\begin{equation}\label{eq:C_constant}
+C \equiv \sum_{k=1}^{K} g\bigl(\alpha^{*}_{k}\bigr) \tau^{0}_{k},
+\end{equation}
+where $\alpha^{*}_{k}$ is the optimal attention allocation to source $k$. Let $\bar{\eta} \equiv \max_\ell \eta_\ell$ denote the maximal preservation rate across layers. The equilibrium posterior precision at layer $\ell$ satisfies
+\begin{equation}\label{eq:recursive_tau_unified}
+\tau^{*}_{\ell} = \rho \cdot \tau^{*}_{\ell-1} + C \eta_\ell^{\,\ell}, \qquad \tau^{*}_{0} = \sum_{k=1}^{K} \tau^{0}_{k}.
+\end{equation}
+Under uniform attention budgets ($A_\ell = A$, so $\eta_\ell = \eta$ for all $\ell$), the closed-form solution is
+\begin{equation}\label{eq:tau_star_L}
+\tau^{*}_{L} = \rho^{L} \tau^{*}_{0} + \frac{C\eta\bigl(\eta^{L} - \rho^{L}\bigr)}{\eta - \rho} \quad \text{for } \eta \neq \rho,
+\end{equation}
+and $\tau^{*}_{L} = \eta^{L}\bigl(\tau^{*}_{0} + CL\bigr)$ when $\eta = \rho$. Moreover:
+
+\begin{enumerate}[label=(\roman*)]
+\item \textbf{If $\eta < \rho$:} $\tau^{*}_{\ell}$ is hump-shaped. It increases for early layers, reaches a maximum at some finite $\ell^{*} \geq 1$, then decreases monotonically. The limiting precision is $\lim_{\ell \to \infty} \tau^{*}_{\ell} = 0$.
+
+\item \textbf{If $\eta > \rho$:} $\tau^{*}_{\ell}$ is eventually decreasing. It may increase initially depending on initial conditions, but eventually declines monotonically to $0$.
+
+\item \textbf{If $\eta = \rho$:} $\tau^{*}_{\ell} = \eta^{\ell}(\tau^{*}_{0} + C\ell)$, which is eventually decreasing to $0$.
+\end{enumerate}
+In all cases, $\lim_{\ell \to \infty} \tau^{*}_{\ell} = 0$.
+\label{prop:geometric_decay}%
+\end{proposition}
+
+\begin{proof}
+\noindent\textbf{Step 1: Derivation of the recurrence.}
+Under uniform technology and Assumptions~\ref{ass:state_signals}--\ref{ass:endogenous_eta}, the new signal contribution at layer $\ell$ is $\sum_{k=1}^{K} g(\alpha^*_k) \tau^0_k \eta_\ell^{\,\ell} = C\eta_\ell^{\,\ell}$, where $C$ is defined in \eqref{eq:C_constant}. Substituting into \eqref{eq:recursive_precision} yields \eqref{eq:recursive_tau_unified}. Under uniform attention budgets ($A_\ell = A$), we have $\eta_\ell = \eta$ for all $\ell$, and the recurrence simplifies to $\tau^{*}_{\ell} = \rho \tau^{*}_{\ell-1} + C\eta^{\ell}$.
+
+\noindent\textbf{Step 2: Closed-form solution (uniform budgets).}
+Under uniform budgets, \eqref{eq:recursive_tau_unified} becomes a first-order linear non-homogeneous difference equation with constant coefficients.
+
+\textit{Case 1: $\eta \neq \rho$.} The homogeneous solution is $\tau^{(h)}_{\ell} = A \rho^{\ell}$. Guessing a particular solution $\tau^{(p)}_{\ell} = B \eta^{\ell}$ and substituting:
+\begin{equation*}
+B\eta^{\ell} = \rho B \eta^{\ell-1} + C\eta^{\ell}
+\quad\Longrightarrow\quad
+B = \frac{C\eta}{\eta - \rho}.
+\end{equation*}
+Applying $\tau^{*}_{0} = A + B$ and solving for $\tau^{*}_{L}$ yields \eqref{eq:tau_star_L}.
+
+\textit{Case 2: $\eta = \rho$.} The recurrence becomes $\tau^{*}_{\ell} = \eta \tau^{*}_{\ell-1} + C\eta^{\ell}$. Defining $u_{\ell} \equiv \tau^{*}_{\ell}/\eta^{\ell}$, we have $u_{\ell} = u_{\ell-1} + C$, which telescopes to $u_{\ell} = \tau^{*}_{0} + C\ell$. Hence $\tau^{*}_{L} = \eta^{L}(\tau^{*}_{0} + CL)$.
+
+\noindent\textbf{Step 3: Vanishing precision (all cases).}
+Since $\rho \in (0,1)$ and $\eta_\ell \leq \bar{\eta} < 1$ for all $\ell$ (by Assumption~\ref{ass:endogenous_eta}), both $\rho^{L} \to 0$ and $\eta_\ell^{\,L} \to 0$. In all three cases, $\lim_{L\to\infty} \tau^{*}_{L} = 0$. The critical difference from the $\eta = 1$ case is that $\bar{\eta} < 1$ is a \emph{structural bound}: even with unlimited attention, the preservation rate cannot reach unity, and geometric decay is inevitable.
+
+\noindent\textbf{Step 4: Shape characterization.}
+From \eqref{eq:recursive_tau_unified}, the layer-to-layer change is
+\begin{equation}\label{eq:delta_tau}
+\Delta_{\ell} \equiv \tau^{*}_{\ell} - \tau^{*}_{\ell-1} = -(1-\rho)\tau^{*}_{\ell-1} + C\eta_\ell^{\,\ell}.
+\end{equation}
+Under uniform budgets ($\eta_\ell = \eta$):
+
+\textit{Subcase (i): $\eta < \rho$.} The $\rho^{\ell}$ term dominates the closed-form solution for large $\ell$. Since $\rho > \eta$, the negative term $-(1-\rho)\tau^{*}_{\ell-1}$ (which decays as $\rho^{\ell-1}$) eventually dominates the positive term $C\eta^{\ell}$ (which decays as $\eta^{\ell}$). Thus $\Delta_{\ell} < 0$ for all $\ell \geq \bar{L}_1$. For small $\ell$, however, the positive term may dominate if $\tau^{*}_{0}$ is small relative to $C\eta$, causing an initial increase. The path is therefore hump-shaped.
+
+\textit{Subcase (ii): $\eta > \rho$.} As $\ell \to \infty$, $\tau^{*}_{\ell-1} \sim C\eta^{\ell}/(\eta-\rho)$. Substituting into \eqref{eq:delta_tau}:
+\begin{equation*}
+\Delta_{\ell} \sim C\eta^{\ell}\left(1 - \frac{1-\rho}{\eta-\rho}\right) = C\eta^{\ell}\frac{\eta - 1}{\eta - \rho} < 0,
+\end{equation*}
+since $\eta < 1$ and $\eta > \rho$. The sequence is eventually decreasing.
+
+\textit{Subcase (iii): $\eta = \rho$.} Using $\tau^{*}_{\ell} = \eta^{\ell}(\tau^{*}_{0} + C\ell)$:
+\begin{equation*}
+\Delta_{\ell} = \eta^{\ell-1}\bigl[(\eta-1)\tau^{*}_{0} + C - C(1-\eta)\ell\bigr].
+\end{equation*}
+Since $\eta < 1$, the bracket is affine in $\ell$ with negative slope $-C(1-\eta) < 0$. Hence $\Delta_{\ell} < 0$ whenever $\ell > \tau^{*}_{0}/C + 1/(1-\eta)$.
+\end{proof}
+
+\begin{proposition}[Endogenous Preservation and the $\bar{\eta}$ Bound]\label{prop:eta_bar_bound}
+Under Assumption~\ref{ass:endogenous_eta}, the preservation rate $\eta_\ell$ satisfies:
+\begin{enumerate}[label=(\roman*)]
+\item \textbf{Attention monotonicity:} $\eta_\ell$ is strictly increasing and concave in $A_\ell$:
+\begin{equation}\label{eq:eta_increasing}
+\frac{\partial \eta_\ell}{\partial A_\ell} = \frac{(\bar{\eta} - \underline{\eta}) \, a / K_\ell}{(\bar{\alpha}_\ell + a)^2} > 0, \qquad \frac{\partial^2 \eta_\ell}{\partial A_\ell^2} < 0.
+\end{equation}
+
+\item \textbf{Irreducible depreciation:} Even with unlimited attention, depreciation cannot be eliminated:
+\begin{equation}\label{eq:eta_bar_limit}
+\lim_{A_\ell \to \infty} \eta_\ell = \bar{\eta} < 1.
+\end{equation}
+Consequently, for any attention budget profile $\{A_\ell\}$, the cumulative precision at the top layer satisfies
+\begin{equation}\label{eq:tau_L_upper_bound}
+\tau^{*}_L \leq \rho^{L} \tau^{*}_{0} + \frac{C\bar{\eta}\bigl(\bar{\eta}^{L} - \rho^{L}\bigr)}{\bar{\eta} - \rho} \quad (\bar{\eta} \neq \rho),
+\end{equation}
+and the upper bound converges to $0$ as $L \to \infty$.
+
+\item \textbf{Finite depth robustness:} The finite-optimal-depth result (Proposition~\ref{prop:optimal_depth}) holds \emph{regardless} of the attention budget profile. Even if $A_\ell \to \infty$ at every layer, the bound $\bar{\eta} < 1$ ensures $\lim_{L \to \infty} \tau^{*}_L = 0$.
+\end{enumerate}
+\end{proposition}
+
+\begin{proof}
+\noindent\textbf{Part (i):} Direct differentiation of \eqref{eq:endogenous_eta} with respect to $A_\ell$, using $\bar{\alpha}_\ell = A_\ell / K_\ell$, yields \eqref{eq:eta_increasing}.
+
+\noindent\textbf{Part (ii):} Taking the limit of \eqref{eq:endogenous_eta} as $A_\ell \to \infty$:
+\begin{equation*}
+\lim_{A_\ell \to \infty} \eta_\ell = \underline{\eta} + (\bar{\eta} - \underline{\eta}) \cdot \lim_{\bar{\alpha}_\ell \to \infty} \frac{\bar{\alpha}_\ell}{\bar{\alpha}_\ell + a} = \underline{\eta} + (\bar{\eta} - \underline{\eta}) \cdot 1 = \bar{\eta}.
+\end{equation*}
+Since $\eta_\ell \leq \bar{\eta}$ for all $\ell$, the signal contribution at layer $\ell$ is bounded above by $C\bar{\eta}^{\,\ell}$. Substituting this upper bound into the recurrence \eqref{eq:recursive_tau_unified} yields \eqref{eq:tau_L_upper_bound}. Since $\bar{\eta} < 1$, the upper bound converges to $0$ as $L \to \infty$.
+
+\noindent\textbf{Part (iii):} By Part (ii), $\tau^{*}_L$ is bounded above by a quantity that converges to $0$, so $\tau^{*}_L \to 0$ for \emph{any} budget profile. The proof of Proposition~\ref{prop:optimal_depth} then applies unchanged: there exists a finite $\bar{L}$ beyond which the marginal benefit of adding a layer is negative.
+\end{proof}
+
+\begin{remark}[Why $\bar{\eta} < 1$: Micro-foundations]\label{rem:eta_bar_microfoundation}
+The bound $\bar{\eta} < 1$ is not an exogenous assumption; it reflects three fundamental limits of LLM information processing that no amount of attention can overcome:
+\begin{enumerate}[label=(\roman*)]
+\item \textbf{Irreversible embedding compression.} Each forward pass projects discrete tokens into a continuous embedding space through a non-invertible mapping. The entropy reduction is structural: a 4096-dimensional embedding of a 100,000-token vocabulary inherently discards information that cannot be recovered by downstream layers, regardless of context-window size.
+\item \textbf{Non-invertible attention operations.} The attention mechanism computes weighted averages of value vectors. This is a many-to-one mapping: different input configurations can produce identical attention outputs. The operation discards positional and structural information about \emph{which} tokens contributed \emph{how much}, and this information loss is fundamental to the architecture.
+\item \textbf{Lossy summarization as a design feature.} LLMs are trained to compress and generalize, not to preserve. The training objective (next-token prediction with KL regularization) explicitly rewards discarding idiosyncratic detail in favor of distributional patterns. Even with unlimited compute and context, the model's inductive bias favors abstraction over fidelity.
+\end{enumerate}
+These three forces explain why $\bar{\eta} < 1$ is a \emph{technological primitive} of transformer-based processing, not a modeling assumption that could be relaxed by better engineering. The bound $\bar{\eta}$ can be calibrated from empirical measurements of signal fidelity as a function of context length; see Section~\ref{sec:calibration}.
+\end{remark}
+
+\begin{remark}[What the Compounding Effect Is and Is Not]\label{rem:compounding_qualitative}
+An earlier version of this paper claimed that $\tau^*_L$ is \emph{strictly decreasing} in $L$ for any fixed budget (a ``compounding effect''). That claim is incorrect. Proposition~\ref{prop:precision_path} shows that $\tau^*_\ell$ can \emph{increase} for early layers when fresh signals are abundant ($C\eta_\ell^{\,\ell}$ large relative to inherited precision). The correct statement is that precision \emph{eventually} declines due to information depreciation, not that it decreases monotonically from the first layer. The eventual decline to zero is the economically relevant property for establishing finite optimal depth.
+\end{remark}
+
+\subsection{Optimal Organizational Depth}
+\label{subsec:optimal_depth}
+
+Proposition~\ref{prop:precision_path} establishes that the precision path eventually declines to zero under information depreciation. We now show that this vanishing precision implies a finite optimal depth.
+
+The principal chooses depth $L$ and the budget profile $\{A_\ell\}_{\ell=0}^{L-1}$ to maximize the value of the final decision. The optimization problem is:
+\begin{equation}\label{eq:optimal_depth}
+\max_{L, \{A_\ell\}} V_L(\tau^*_L) - \sum_{\ell=0}^{L-1} c_\ell(A_\ell).
+\end{equation}
+
+\begin{proposition}[Optimal Depth Existence]\label{prop:optimal_depth}
+\label{prop:depth_finite}%
+\label{prop:finite_depth}%
+Under the information depreciation model (Assumptions~\ref{ass:hierarchy}--\ref{ass:endogenous_eta} with $\bar{\eta} < 1$), there exists a finite optimal depth $L^* < \infty$ for any attention budget profile $\{A_\ell\}$.
+\end{proposition}
+
+\begin{proof}
+The proof has two parts. First, we show that $\tau^{*}_{\ell} \to 0$ as $\ell \to \infty$, which follows directly from Proposition~\ref{prop:precision_path} and the bound $\eta_\ell \leq \bar{\eta} < 1$ (Proposition~\ref{prop:eta_bar_bound}). Second, we show that this vanishing precision implies a finite optimal depth.
+
+Since $V_L(\cdot)$ is strictly increasing and continuous, $\lim_{\ell \to \infty} V_L(\tau^{*}_{\ell}) = V_L(0)$. By Proposition~\ref{prop:precision_path}, there exists a finite threshold $\bar{L}$ such that $\tau^{*}_{\ell} < \tau^{*}_{\ell-1}$ for all $\ell \geq \bar{L}$. Since $V_L$ is strictly increasing, $V_L(\tau^{*}_{\ell}) < V_L(\tau^{*}_{\ell-1})$ for all $\ell \geq \bar{L}$.
+
+For any $\ell \geq \bar{L}$, the net marginal benefit of adding layer $\ell$ is:
+\begin{equation*}
+\underbrace{V_L(\tau^{*}_{\ell}) - V_L(\tau^{*}_{\ell-1})}_{< 0} - \underbrace{c_{\ell}(A_{\ell})}_{\geq 0} < 0.
+\end{equation*}
+Thus no planner would ever choose $\ell > \bar{L}$, and $L^{*} \leq \bar{L} < \infty$ regardless of how small the marginal attention cost $\kappa$ is or how large the attention budgets $\{A_\ell\}$ are.
+
+The critical mechanism is \emph{information depreciation bounded away from unity}: because $\eta_\ell \leq \bar{\eta} < 1$ for all $\ell$ (even with unlimited attention), each layer's signals carry less raw precision than the previous layer's ($\bar{\eta}^{\,\ell} \to 0$), while the attention budget can only raise $\eta_\ell$ toward $\bar{\eta}$ but never eliminate the geometric decay. The compounding of these two forces---inherent algorithmic noise (captured by $\bar{\eta} < 1$) and endogenous precision leakage ($\rho < 1$)---drives $\tau^{*}_{\ell}$ to zero and bounds the efficient depth of the chain.
+\end{proof}
+
+\vspace{1em}
+\noindent\textbf{Necessity of the $\bar{\eta} < 1$ bound.}
+The finite-depth result relies critically on Assumption~\ref{ass:endogenous_eta} with $\bar{\eta} < 1$. If $\bar{\eta} = 1$ (unbounded preservation with unlimited attention), then with sufficiently large $A_\ell$, $\eta_\ell$ could be driven arbitrarily close to $1$, and the recurrence \eqref{eq:recursive_tau_unified} would approach $\tau^{*}_{\ell} = \rho \tau^{*}_{\ell-1} + C$, with solution $\tau^{*}_{L} = \rho^{L}\tau^{*}_{0} + C(1-\rho^{L})/(1-\rho) \to C/(1-\rho) > 0$. The precision would converge to a positive limit, so $V(\tau^{*}_{L})$ converges to $V(C/(1-\rho)) > V(0)$ from below, and infinite depth could be optimal whenever the marginal cost $\kappa$ is below the limiting marginal benefit.
+
+With the endogenous preservation rate bounded by $\bar{\eta} < 1$, this possibility is ruled out \emph{by construction}. Even as $A_\ell \to \infty$, we have $\eta_\ell \to \bar{\eta} < 1$, so the signal contribution at layer $\ell$ is bounded above by $C\bar{\eta}^{\,\ell}$, which decays geometrically. The bound $\bar{\eta} < 1$ is therefore \emph{sufficient} for the finite-depth result, \emph{regardless} of the attention cost or budget. This is the key sense in which endogenizing $\eta$ strengthens rather than weakens the model: the finite-depth result becomes robust to arbitrarily large attention budgets because inherent algorithmic noise places a technological ceiling on signal preservation.
+
+\vspace{1em}
+\noindent\textbf{Economic Discussion: Information Capital Depreciation.}
+
+The critical insight of Proposition~\ref{prop:optimal_depth} is that \emph{depth-induced signal degradation} fundamentally alters the returns to layering. The endogenous preservation rate $\eta_\ell$ serves a role analogous to depreciation in capital accumulation: just as physical capital loses productive value through wear and tear, information capital (posterior precision) erodes through repeated algorithmic processing.
+
+The preservation rate $\eta_\ell$ can be micro-founded through several channels:
+\begin{enumerate}[label=(\roman*)]
+\item \emph{Compressive loss:} Each LLM distills verbose inputs into concise outputs, inevitably discarding fine-grained detail. The summary statistics that propagate upward retain the gist but lose nuance.
+\item \emph{Hallucination risk:} Models introduce plausible-sounding but factually incorrect content, injecting algorithmic noise that dilutes the signal-to-noise ratio.
+\item \emph{Context window saturation:} Deeper layers must accommodate progressively more compressed representations; even with expanded context windows, the \emph{effective} precision per token declines.
+\end{enumerate}
+
+The endogenous framework clarifies the relationship between attention and depreciation. An $\eta_\ell$ close to $\bar{\eta}$ (achieved with large $A_\ell$) indicates high-fidelity transmission (e.g., retrieval-augmented systems with precise citations), while an $\eta_\ell$ close to $\underline{\eta}$ (small $A_\ell$) corresponds to lossy processing that obscures original signal content. Crucially, because $\bar{\eta} < 1$, even infinite attention cannot eliminate depreciation entirely. Our result that $L^{*}$ is bounded even when API calls are cheap ($\kappa \approx 0$) and attention budgets are large formalizes the intuition that organizational limits to AI delegation derive not from budget constraints alone, but from \emph{fundamental information-theoretic limits} inherent to transformer computation.
+
+It is important to be precise about what drives the result. \emph{Attention scarcity alone} (finite $A_\ell$) is insufficient to guarantee finite optimal depth when costs vanish: if $\bar{\eta} = 1$, then with $A_\ell \to \infty$ we would have $\eta_\ell \to 1$, the precision would converge to a positive limit, and arbitrarily deep chains could be optimal. Conversely, \emph{information depreciation alone} ($\bar{\eta} < 1$) with unlimited attention budgets still bounds depth, as each layer's signals carry vanishingly little information no matter how much attention is applied. The two forces are \emph{complementary}: attention scarcity determines \emph{where} $\eta_\ell$ lies in the interval $[\underline{\eta}, \bar{\eta}]$, while the bound $\bar{\eta} < 1$ ensures that the \emph{total} information content always shrinks as the chain lengthens.
+
+\subsection{Comparative Statics of Optimal Depth}
+\label{subsec:comp_statics_depth}
+
+We conclude with two comparative-statics results that link the optimal depth to economic primitives.
+
+\begin{proposition}[Attention Budget and Depth]\label{prop:budget_depth}
+The optimal depth $L^*$ is increasing in the attention budget profile:
+\begin{equation}\label{eq:budget_depth}
+\frac{\partial L^*}{\partial A_\ell} > 0 \quad \text{for all } \ell.
+\end{equation}
+\end{proposition}
+
+\begin{proof}
+A larger attention budget at any layer raises the transmission factor $\rho_\ell$, reducing the precision loss per layer. This makes deeper chains more attractive because the marginal benefit of adding a layer falls less quickly relative to the marginal cost. Formally, by Proposition~\ref{prop:precision_path}, a higher $\rho$ (from larger $A_\ell$) raises the precision path $\tau^*_\ell$ at all layers and can delay the threshold $\bar{L}$ beyond which precision declines, allowing a larger optimal $L^*$.
+\end{proof}
+
+\begin{proposition}[Cost of Attention and Depth]\label{prop:cost_depth}
+The optimal depth $L^*$ is decreasing in the marginal cost of attention:
+\begin{equation}\label{eq:cost_depth}
+\frac{\partial L^*}{\partial \kappa_\ell} < 0 \quad \text{for all } \ell,
+\end{equation}
+where $\kappa_\ell$ parameterizes the cost function $c_\ell(A_\ell) = \kappa_\ell A_\ell + \frac{\phi_\ell}{2} A_\ell^2$.
+\end{proposition}
+
+\begin{proof}
+Higher API costs make each layer more expensive, pushing the organization toward shallower structures. This is the attention-allocation analog of the Coasian prediction that higher coordination costs favor integration.
+\end{proof}
+
+\vspace{1em}
+\noindent\textbf{Summary.} Proposition~\ref{prop:front_loading} establishes that the optimal architecture front-loads attention capacity: larger context windows should be deployed at early layers. Proposition~\ref{prop:optimal_depth} shows that finite optimal depth is a generic property of the information depreciation model. Propositions~\ref{prop:budget_depth} and~\ref{prop:cost_depth} provide the comparative-statics predictions: larger context windows permit deeper chains, while higher API costs push toward shallower ones. These four results collectively discipline the design of multi-agent AI architectures and generate testable predictions about the relationship between technology parameters and organizational form.

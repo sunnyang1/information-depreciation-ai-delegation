@@ -1,0 +1,405 @@
+\section{Single-Layer Analysis}
+\label{sec:single}
+
+In this section, we solve the attention-allocation problem for a single layer, derive the optimal attention weights, characterize the resulting distortion, and establish comparative statics with respect to the attention budget, signal importance, and signal heterogeneity. We then connect our results to the rational-inattention literature and derive two propositions that form the building blocks for the multi-layer analysis in Section \ref{sec:multi}.
+
+The single-layer problem is not merely a stepping stone. It is the core economic mechanism of the paper: everything that happens in a delegation chain---distortion, error propagation, depth optimization---traces back to how each individual layer allocates its scarce attention.
+
+\subsection{The Optimization Problem}
+\label{subsec:single_opt}
+
+Consider layer $\ell$ in isolation. The agent faces $K_\ell$ signals with intrinsic precisions $\{\tau^0_{\ell,k}\}_{k=1}^{K_\ell}$ and chooses attention weights $\boldsymbol{\alpha}_\ell = (\alpha_{\ell,1}, \ldots, \alpha_{\ell,K_\ell})$ subject to the budget constraint \eqref{eq:budget_constraint}. The effective precision is given by \eqref{eq:effective_precision}, and the agent's payoff is $V_\ell(\tau_\ell(\boldsymbol{\alpha}_\ell)) - c_\ell(A_\ell)$. Since $c_\ell(A_\ell)$ does not depend on $\boldsymbol{\alpha}_\ell$, the optimization problem is:
+\begin{equation}\label{eq:single_opt}
+\max_{\boldsymbol{\alpha}_\ell \;:\; \eqref{eq:budget_constraint}} V_\ell\Biggl(\sum_{k=1}^{K_\ell} g_\ell(\alpha_{\ell,k}) \tau^0_{\ell,k}\Biggr).
+\end{equation}
+We assume throughout that $V_\ell(\tau)$ is increasing and concave in $\tau$. This is satisfied by the quadratic-loss specification \eqref{eq:value_function} and by most standard decision problems.
+
+\subsection{First-Order Conditions and Optimal Attention}
+\label{subsec:foc}
+
+Let $\lambda_\ell \geq 0$ be the Lagrange multiplier on the budget constraint \eqref{eq:budget_constraint}. The Lagrangian is:
+\begin{equation}\label{eq:lagrangian}
+\mathcal{L}(\boldsymbol{\alpha}_\ell, \lambda_\ell) = V_\ell\Biggl(\sum_{k=1}^{K_\ell} g_\ell(\alpha_{\ell,k}) \tau^0_{\ell,k}\Biggr) - \lambda_\ell\Biggl(\sum_{k=1}^{K_\ell} \alpha_{\ell,k} - A_\ell\Biggr) + \sum_{k=1}^{K_\ell} \mu_{\ell,k} \alpha_{\ell,k},
+\end{equation}
+where $\mu_{\ell,k} \geq 0$ are multipliers on the non-negativity constraints.
+
+The first-order condition for $\alpha_{\ell,k}$ is:
+\begin{equation}\label{eq:foc}
+V'_\ell\bigl(\tau_\ell(\boldsymbol{\alpha}_\ell)\bigr) \cdot g'_\ell(\alpha_{\ell,k}) \tau^0_{\ell,k} = \lambda_\ell - \mu_{\ell,k}.
+\end{equation}
+This condition has a straightforward economic interpretation. The left-hand side is the marginal benefit of allocating attention to signal $k$: the marginal value of precision ($V'_\ell$) times the marginal precision gain from attention ($g'_\ell(\alpha_{\ell,k}) \tau^0_{\ell,k}$). The right-hand side is the marginal cost: the shadow price of the attention budget ($\lambda_\ell$) minus the relaxation of the non-negativity constraint ($\mu_{\ell,k}$). At an interior solution ($\alpha_{\ell,k} > 0$), $\mu_{\ell,k} = 0$ and the marginal benefit equals the shadow price $\lambda_\ell$.
+
+\begin{proposition}[Optimal Attention Allocation]\label{prop:optimal_attention}
+Suppose $V_\ell$ is increasing and concave, $g_\ell$ is increasing and concave with $g'_\ell(0) > 0$, and $\tau^0_{\ell,k} > 0$ for all $k$. Then:
+\begin{enumerate}[label=(\roman*)]
+\item The optimal attention allocation $\boldsymbol{\alpha}^*_\ell(A_\ell)$ exists and is unique.
+\item If the budget binds ($\sum_k \alpha^*_{\ell,k} = A_\ell$), the optimal weights satisfy
+\begin{equation}\label{eq:interior_foc}
+g'_\ell(\alpha^*_{\ell,k}) \tau^0_{\ell,k} = g'_\ell(\alpha^*_{\ell,j}) \tau^0_{\ell,j} \quad \forall k,j \text{ with } \alpha^*_{\ell,k}, \alpha^*_{\ell,j} > 0.
+\end{equation}
+\item The optimal weight on signal $k$ is increasing in its intrinsic precision $\tau^0_{\ell,k}$ and decreasing in the precision of other signals.
+\end{enumerate}
+\end{proposition}
+
+\begin{proof}
+See Appendix \ref{app:proof_prop1}.
+\end{proof}
+
+Intuition. The optimality condition \eqref{eq:interior_foc} says that the agent equalizes the marginal precision product across all signals that receive positive attention. Signals with higher intrinsic precision receive more attention not because they are ``preferred'' in any absolute sense, but because they yield higher marginal returns: each unit of attention devoted to a high-quality signal extracts more information than a unit devoted to a low-quality signal. This is the familiar logic of equalizing marginal products across inputs, applied here to the allocation of attention rather than labor or capital.
+
+For the power-function specification $g_\ell(\alpha) = \alpha^\gamma$, the first-order condition becomes:
+\begin{equation}\label{eq:closed_form}
+\alpha^*_{\ell,k} = \biggl(\frac{\gamma \tau^0_{\ell,k}}{\lambda_\ell}\biggr)^{\frac{1}{1-\gamma}} \quad \text{(interior solutions)}.
+\end{equation}
+This closed form reveals the key comparative static: the optimal attention weight is log-convex in intrinsic precision when $\gamma < 1/2$ and log-concave when $\gamma > 1/2$. In the empirically relevant case of $\gamma \approx 0.3$ (calibrated from LLM accuracy data), small differences in signal quality are amplified into large differences in attention allocation: a signal with twice the precision receives approximately $2^{1/(1-0.3)} \approx 2.69$ times the attention. This amplification is the mechanism by which ``important'' signals dominate and ``unimportant'' signals are starved.
+
+\subsection{Distortion and the Attention Gap}
+\label{subsec:distortion}
+
+We now define the distortion arising from attention allocation and characterize how it depends on the attention budget and signal structure.
+
+\begin{definition}[Attentional Distortion]\label{def:distortion}
+The distortion on signal $k$ at layer $\ell$ is
+\begin{equation}\label{eq:distortion}
+\delta_{\ell,k} = (\bar{\alpha}_{\ell,k} - \alpha^*_{\ell,k})^+,
+\end{equation}
+where $\bar{\alpha}_{\ell,k}$ is the attention weight required to fully process signal $k$ (i.e., achieve $\tau^0_{\ell,k}$ without loss), and $(\cdot)^+ = \max\{\cdot, 0\}$.
+\end{definition}
+
+In the baseline where $\bar{\alpha}_{\ell,k} = 1$ for all $k$ (unit attention achieves full precision), the distortion is simply $\delta_{\ell,k} = (1 - \alpha^*_{\ell,k})^+$. If $\alpha^*_{\ell,k} \geq 1$, the signal is fully processed and $\delta_{\ell,k} = 0$. If $\alpha^*_{\ell,k} < 1$, the signal is under-processed and the distortion is positive.
+
+We can also define an aggregate distortion measure:
+\begin{definition}[Aggregate Distortion]\label{def:aggregate_distortion}
+The aggregate attentional distortion at layer $\ell$ is
+\begin{equation}\label{eq:aggregate_distortion}
+\Delta_\ell = \frac{\sum_{k=1}^{K_\ell} \omega_{\ell,k} \delta_{\ell,k}}{\sum_{k=1}^{K_\ell} \omega_{\ell,k}},
+\end{equation}
+where $\omega_{\ell,k} > 0$ is the importance weight of signal $k$ for the layer's decision. In the quadratic-loss case, $\omega_{\ell,k} = \tau^0_{\ell,k}$.
+\end{definition}
+
+\begin{proposition}[Distortion Comparative Statics]\label{prop:distortion_comp_statics}
+The aggregate distortion $\Delta_\ell$ satisfies:
+\begin{enumerate}[label=(\roman*)]
+\item $\Delta_\ell$ is decreasing in the attention budget $A_\ell$: $\partial \Delta_\ell / \partial A_\ell < 0$.
+\item $\Delta_\ell$ is increasing in the number of signals $K_\ell$: $\partial \Delta_\ell / \partial K_\ell > 0$ when $A_\ell$ is held fixed.
+\item $\Delta_\ell$ is decreasing in the heterogeneity of signal precisions: holding mean precision fixed, $\Delta_\ell$ is lower when $\{\tau^0_{\ell,k}\}$ is more dispersed.
+\end{enumerate}
+\end{proposition}
+
+\begin{proof}
+See Appendix \ref{app:proof_prop2}.
+\end{proof}
+
+Intuition. Proposition \ref{prop:distortion_comp_statics} delivers three testable predictions. First, increasing the attention budget reduces distortion: if the principal upgrades from GPT-3.5 (4K context) to GPT-4 (128K context), the model can attend to more signals and distortion falls. Second, increasing the number of signals while holding the budget fixed increases distortion: this is the mechanism behind ``attention overload'' in RAG systems. Third, signal heterogeneity reduces aggregate distortion because the optimal allocation concentrates attention on the best signals. If all signals are of equal quality, the agent spreads attention evenly and all signals are under-processed. If signals vary in quality, the agent concentrates on the high-quality ones, achieving near-full precision on the most important signals while deliberately sacrificing the low-quality ones.
+
+\subsection{The Endogenous Distortion Factor}
+\label{subsec:endogenous_distortion}
+
+We now derive the endogenous distortion measure that connects the single-layer attention-allocation problem to the multi-layer transmission analysis.
+
+\begin{definition}[Single-Layer Distortion Measure]\label{def:single_layer_distortion}
+The single-layer distortion measure at layer $\ell$ is
+\begin{equation}\label{eq:single_distortion}
+\tilde{\delta}_\ell = 1 - \Delta_\ell = 1 - \frac{\sum_k \omega_{\ell,k} (\bar{\alpha}_{\ell,k} - \alpha^*_{\ell,k})^+}{\sum_k \omega_{\ell,k}}.
+\end{equation}
+\end{definition}
+
+The measure $\tilde{\delta}_\ell \in [0,1]$ captures the fraction of signal importance that survives the attention-allocation process at a single layer, ignoring upstream effects. When $\tilde{\delta}_\ell = 1$, all signals are fully processed and no distortion occurs. When $\tilde{\delta}_\ell = 0$, all signals are ignored and the layer transmits pure noise. In general, $\tilde{\delta}_\ell$ is a function of the attention budget, the number of signals, their precisions, and the attention technology:
+\begin{equation}\label{eq:delta_function}
+\tilde{\delta}_\ell = \tilde{\delta}(A_\ell, K_\ell, \{\tau^0_{\ell,k}\}, g_\ell).
+\end{equation}
+This is the core endogenization result. The distortion measure is not a primitive parameter but a derived object that depends on observable technological and organizational variables.
+
+\begin{remark}[From $\tilde{\delta}_\ell$ to $\rho_\ell$]\label{rem:delta_to_rho}
+The single-layer measure $\tilde{\delta}_\ell$ is useful for analyzing distortion at an isolated layer. In the multi-layer analysis (Section \ref{sec:multi}), we introduce the endogenous transmission factor $\rho_\ell \equiv \tau^*_\ell / \tau^{\text{FB}}_\ell$, which accounts for the compounding of inherited precision. For the bottom layer with $\tau^{\text{prior}}_0 = 0$, the two coincide: $\rho_0 = \tilde{\delta}_0 = 1 - \Delta_0$. For upper layers, $\rho_\ell$ generalizes $\tilde{\delta}_\ell$ by incorporating the prior precision.
+\end{remark}
+
+\subsection{Connection to Rational Inattention}
+\label{subsec:ri_connection}
+
+Our model is a direct extension of the rational-inattention framework to hierarchical organizations. We now make this connection explicit.
+
+\textbf{Sims (2003): The single-agent benchmark.} In Sims's model, a single agent faces a multidimensional state $\omega \in \mathbb{R}^d$ and chooses an information structure subject to a mutual-information constraint $I(\omega; \hat{\omega}) \leq \kappa$. Our model specializes Sims in two directions and generalizes it in one. We specialize by assuming a linear precision-aggregation technology (Equation \eqref{eq:effective_precision}) rather than the general information-structure choice. We specialize by assuming a hard attention budget rather than an entropy-based information-cost function. We generalize by embedding the single-agent problem in a hierarchy where the output of one agent becomes the input to the next.
+
+The hard budget vs.~entropy-cost distinction is important. Sims's entropy cost is analytically elegant, but it is less directly mapped to AI technology. The mutual information $I(\omega; \hat{\omega})$ is difficult to measure in an LLM pipeline, whereas the context-window length $A_\ell$ is directly observable. Our hard-budget formulation trades some analytical elegance for empirical tractability.
+
+\textbf{Dessein and Santos (2006): Organizational attention.} Dessein and Santos model an organization in which agents have a fixed attention capacity that can be used for both sending and receiving information. Our model extends theirs in three ways. First, we allow attention to be continuously allocated across signals rather than discretely assigned to tasks. Second, we allow the attention budget to vary across layers ($A_\ell$ need not equal $A_{\ell'}$), capturing the fact that different LLMs in a chain have different context-window sizes. Third, we model the endogenous degradation of information through the chain.
+
+\textbf{Dessein, Galeotti, and Santos (2016): Division of labor.} In their follow-up paper, Dessein et al.~study how attention constraints generate specialization. Our Proposition \ref{prop:distortion_comp_statics}(iii) echoes this result: heterogeneity in signal quality leads to specialization in attention allocation. We extend their analysis by deriving the optimal chain depth from attention costs.
+
+\paragraph{Limitations of the microfoundation.}
+Our model makes two deliberate simplifications relative to actual transformer architectures. First, the linear budget constraint \eqref{eq:budget_constraint} is a stylized representation of the context window limit; real transformers use soft attention weights rather than hard capacity constraints. Second, we abstract from the token-token interaction structure of self-attention, treating each signal as an independent information source. These simplifications trade descriptive realism for analytical tractability and should be interpreted as a first-order approximation rather than a literal mapping.
+
+\subsection{Alternative: Entropy Cost Formulation}
+\label{sec:entropy_cost}
+
+\subsubsection{Entropy Cost Setup}
+
+In the rational inattention framework of \citet{sims2003implications}, the agent's information processing cost is proportional to the reduction in uncertainty (measured by mutual information) achieved by observing a signal. Specifically, if the agent chooses an information structure $P(\tilde{s} \mid \omega)$ that maps the true state $\omega \sim \mathcal{N}(\mu, \tau^{-1})$ into a signal realization $\tilde{s}$, the associated cost is:
+\begin{equation}
+C(I) = \theta \cdot I(\omega; \tilde{s}),
+\end{equation}
+where $\theta > 0$ is the marginal price of information and $I(\omega; \tilde{s})$ denotes the mutual information:
+\begin{equation}
+I(\omega; \tilde{s}) = h(\omega) - h(\omega \mid \tilde{s}) = \frac{1}{2}\log_2\left(\frac{\tau_{\text{post}}}{\tau}\right),
+\end{equation}
+where $\tau_{\text{post}} = \tau + \tau_s$ is the posterior precision after observing signal $\tilde{s} = \omega + \varepsilon$ with noise precision $\tau_s$, and $h(\cdot)$ denotes differential entropy.
+
+When a chain of $L$ agents each face entropy costs, agent $\ell$ chooses a signal structure $P(\tilde{s}_\ell \mid \omega)$ at cost $\theta_\ell \cdot I(\omega; \tilde{s}_\ell)$, and then passes a processed message $m_\ell$ to the next layer. The key difference from the hard-budget formulation is that \emph{all signals are processed, but with endogenously varying precision}, rather than a subset being selected with perfect precision.
+
+\subsubsection{Entropy-Cost Version of Our Model}
+
+Consider our multi-layer information processing chain under entropy costs. Each layer $\ell$ chooses the precision $\tau_\ell$ of its signal subject to an entropy cost $\theta_\ell \cdot I(\omega; \tilde{s}_\ell)$. The total cost for the chain is:
+\begin{equation}
+C_{\text{total}} = \sum_{\ell=1}^{L} \theta_\ell \cdot I(\omega; \tilde{s}_\ell) = \sum_{\ell=1}^{L} \frac{\theta_\ell}{2} \log\left(1 + \frac{\tau_\ell}{\tau_{\ell-1}^{*}}\right),
+\end{equation}
+where $\tau_{\ell-1}^{*}$ is the effective precision inherited from the previous layer. The optimization problem at each layer is to choose $\tau_\ell$ to maximize:
+\begin{equation}
+U_\ell(\tau_\ell) = V(\tau_\ell^{*}) - \theta_\ell \cdot I(\omega; \tilde{s}_\ell),
+\end{equation}
+where $\tau_\ell^{*} = \tau_{\ell-1}^{*} + \tau_\ell$ is the posterior precision.
+
+\paragraph{Key Result: Robustness of Finite Depth.} We now establish that the finite-optimal-depth result carries over to the entropy-cost setting:
+
+\begin{proposition}[Finite Optimal Depth under Entropy Costs]\label{prop:finite_depth_entropy}
+Suppose each layer $\ell$ faces an entropy cost with parameter $\theta_\ell > 0$, and the value function $V(\tau)$ satisfies $V'(\tau) > 0$, $V''(\tau) < 0$, and the Inada-like condition $\lim_{\tau \to \infty} V'(\tau) = 0$. Then:
+\begin{enumerate}
+\item[(i)] \textbf{Concave precision response:} The optimal precision $\tau_\ell^{*}(\theta_\ell)$ chosen at each layer satisfies $\frac{\partial^2 \tau_\ell^{*}}{\partial \theta_\ell^2} > 0$, i.e., precision decreases convexly in the cost parameter.
+\item[(ii)] \textbf{Diminishing information increment:} The marginal contribution of layer $\ell$ to total precision, $\Delta_\ell \equiv \tau_\ell^{*} - \tau_{\ell-1}^{*}$, is decreasing in $\ell$ when $\theta_\ell$ is non-decreasing.
+\item[(iii)] \textbf{Finite optimal depth:} If $\inf_\ell \theta_\ell > 0$, there exists a finite $L^{*} < \infty$ such that adding layer $L^{*}+1$ yields negative net value.
+\end{enumerate}
+\end{proposition}
+
+\begin{proof}[Proof Sketch]
+(i) At layer $\ell$, the first-order condition for optimal precision is:
+\begin{equation}
+V'(\tau_{\ell-1}^{*} + \tau_\ell) = \frac{\theta_\ell}{2} \cdot \frac{1}{\tau_{\ell-1}^{*} + \tau_\ell}.
+\end{equation}
+This implicitly defines $\tau_\ell^{*}$ as a function of $\theta_\ell$. By the implicit function theorem and the convexity of the entropy cost in precision, the response function is concave in $1/\theta_\ell$.
+
+(ii) Since $\tau_\ell^{*}$ is increasing in inherited precision $\tau_{\ell-1}^{*}$ but with slope less than 1 (due to $V'' < 0$), the increment $\Delta_\ell$ decreases along the chain when cost parameters are bounded away from zero.
+
+(iii) The net value of adding layer $L+1$ is $V(\tau_{L+1}^{*}) - V(\tau_{L}^{*}) - \theta_{L+1} \cdot I(\omega; \tilde{s}_{L+1})$. Since $V'(\tau) \to 0$ as $\tau \to \infty$ while the marginal entropy cost remains bounded below by $\underline{\theta} \cdot (2\tau)^{-1} > 0$, there exists a finite threshold beyond which the cost exceeds the benefit.
+\end{proof}
+
+\paragraph{Intuition for Robustness.} The critical insight is that the entropy cost function's \emph{convexity} in precision (arising from the logarithmic form of mutual information) naturally generates the same diminishing-returns property that our hard-budget model captures through the fixed-capacity constraint.
+
+\begin{table}[htbp]
+\centering
+\footnotesize
+\setlength{\tabcolsep}{3pt}
+\caption{Comparison: Hard-Budget vs.~Entropy-Cost Assumptions}
+\label{tab:assumption_comparison}
+\begin{tabular}{@{}>{\raggedright\arraybackslash}p{2.8cm}>{\raggedright\arraybackslash}p{5.6cm}>{\raggedright\arraybackslash}p{5.6cm}@{}}
+\toprule
+\textbf{Dimension} & \textbf{Hard-Budget} & \textbf{Entropy-Cost} \\
+\midrule
+Information loss & Signals beyond budget $\bar{A}_\ell$ ignored or truncated. & All signals processed with endogenously varying precision. \\
+Optimization variable & Attention weight vector $\boldsymbol{\alpha}_\ell \in \Delta^{K}$ (discrete capacity). & Information structure $P(\tilde{s} \mid \omega)$ (continuous precision). \\
+Observability & $\bar{A}_\ell$ directly observable (context window size). & $\theta_\ell$ latent; requires calibration. \\
+LLM mapping & Direct: context window imposes hard token bound. & Indirect: entropy reduction to FLOPs mapping. \\
+Core conclusion & Finite optimal depth (Prop.~\ref{prop:finite_depth}). & Finite optimal depth (Prop.~\ref{prop:finite_depth_entropy}). \\
+Parametrization & Sharp cutoff at $\bar{A}_\ell$. & Smooth; no cutoff. \\
+Applicable scenarios & Fixed context-window LLMs. & Variable-compute systems. \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsubsection{Discussion: Why Hard Budgets in the Baseline Model}
+
+We adopt the hard-budget assumption as our baseline for three substantive reasons related to \emph{empirical operability} and the specific application to large language models:
+
+\paragraph{Direct observability.} The hard budget $\bar{A}_\ell$ maps directly and transparently to a measurable technological parameter: the context window length of an LLM (e.g., 4,096 tokens for GPT-3, 128,000 tokens for GPT-4 Turbo). This observable anchor allows us to discipline the model with empirical moments and conduct counterfactuals about window-size expansion.
+
+\paragraph{Descriptive accuracy for current LLM architectures.} Current production LLMs operate with fixed context windows: tokens beyond the window length are either truncated entirely or compressed through external summarization mechanisms. This is precisely the hard-budget mechanism.
+
+\paragraph{Analytical tractability.} The hard-budget formulation yields a finite-dimensional optimization over the simplex $\Delta^{K}$, enabling closed-form solutions for the attention allocation and sharp comparative statics.
+
+\paragraph{Entropy costs as robustness check.} We view the entropy-cost formulation primarily as a \emph{robustness check} on the qualitative conclusions. As Proposition \ref{prop:finite_depth_entropy} demonstrates, the core mechanism---diminishing returns to depth driven by concave precision accumulation---is preserved across both formulations.
+
+\subsection{Propositions for the Multi-Layer Analysis}
+\label{subsec:single_multi_building}
+
+We conclude the single-layer analysis with two propositions that will serve as building blocks for the multi-layer analysis.
+
+\begin{proposition}[Precision Response to Budget]\label{prop:precision_response}
+Let $\tau^*_\ell(A_\ell) \equiv \tau_\ell(\boldsymbol{\alpha}^*_\ell(A_\ell))$ be the optimal effective precision. Then:
+\begin{enumerate}[label=(\roman*)]
+\item $\tau^*_\ell(A_\ell)$ is increasing and concave in $A_\ell$.
+\item The marginal return to attention, $\partial \tau^*_\ell / \partial A_\ell$, is decreasing in $K_\ell$.
+\item $\tau^*_\ell(A_\ell)$ is bounded above by $\bar{\tau}_\ell \equiv \sum_k \tau^0_{\ell,k}$.
+\end{enumerate}
+\end{proposition}
+
+\begin{proof}
+See Appendix \ref{app:proof_prop3}.
+\end{proof}
+
+\begin{proposition}[Cost-Minimizing Budget]\label{prop:cost_min}
+For a target precision level $\bar{\tau}$, the cost-minimizing attention budget $A^*_\ell(\bar{\tau})$ satisfies:
+\begin{enumerate}[label=(\roman*)]
+\item $A^*_\ell(\bar{\tau})$ is increasing and convex in $\bar{\tau}$.
+\item The marginal cost of precision, $\partial c_\ell(A^*_\ell) / \partial \bar{\tau}$, is increasing in $K_\ell$.
+\item If $\bar{\tau} > \tau^*_\ell(K_\ell)$, then $A^*_\ell(\bar{\tau})$ does not exist: the target is infeasible.
+\end{enumerate}
+\end{proposition}
+
+\begin{proof}
+See Appendix \ref{app:proof_prop4}.
+\end{proof}
+
+\begin{proposition}[Attention and Signal Preservation]\label{prop:attention_preservation}
+Under Assumption~\ref{ass:endogenous_eta}, the endogenous preservation rate $\eta_\ell$ at layer $\ell$ satisfies:
+\begin{enumerate}[label=(\roman*)]
+\item $\eta_\ell$ is strictly increasing and concave in the attention budget $A_\ell$:
+\begin{equation}\label{eq:eta_single_comp}
+\frac{\partial \eta_\ell}{\partial A_\ell} = \frac{(\bar{\eta} - \underline{\eta}) \, a / K_\ell}{(\bar{\alpha}_\ell + a)^2} > 0, \qquad \frac{\partial^2 \eta_\ell}{\partial A_\ell^2} = -\frac{2(\bar{\eta} - \underline{\eta}) \, a / K_\ell^2}{(\bar{\alpha}_\ell + a)^3} < 0.
+\end{equation}
+\item $\eta_\ell$ is increasing in the saturation parameter $a$ when $A_\ell$ is small ($\bar{\alpha}_\ell < a$) and decreasing when $A_\ell$ is large ($\bar{\alpha}_\ell > a$).
+\item The \emph{effective} signal precision at layer $\ell$, $\tau^0_{\ell,k} = \bar{\tau}^0_k \cdot \eta_\ell^{\,\ell}$, responds to attention according to
+\begin{equation}\label{eq:tau0_attention_elasticity}
+\frac{\partial \tau^0_{\ell,k}}{\partial A_\ell} = \ell \, \bar{\tau}^0_k \, \eta_\ell^{\,\ell-1} \frac{\partial \eta_\ell}{\partial A_\ell} > 0,
+\end{equation}
+so the marginal return to attention is larger at deeper layers (higher $\ell$).
+\end{enumerate}
+\end{proposition}
+
+\begin{proof}
+\noindent\textbf{Part (i):} Direct differentiation of equation \eqref{eq:endogenous_eta} with respect to $A_\ell$, using $\bar{\alpha}_\ell = A_\ell / K_\ell$, yields the expressions in \eqref{eq:eta_single_comp}. The positivity of the first derivative follows from $\bar{\eta} > \underline{\eta}$, $a > 0$, and $K_\ell > 0$. The negativity of the second derivative follows from the same conditions.
+
+\noindent\textbf{Part (ii):} Differentiating \eqref{eq:endogenous_eta} with respect to $a$:
+\begin{equation*}
+\frac{\partial \eta_\ell}{\partial a} = (\bar{\eta} - \underline{\eta}) \cdot \frac{-\bar{\alpha}_\ell}{(\bar{\alpha}_\ell + a)^2} < 0 \quad \text{for all } \bar{\alpha}_\ell > 0.
+\end{equation*}
+Thus, for fixed $\bar{\alpha}_\ell$, a larger saturation parameter $a$ \emph{decreases} the preservation rate, as it makes attention less effective at improving signal fidelity. The cross-partial derivative reveals how the attention sensitivity depends on $a$:
+\begin{equation*}
+\frac{\partial^2 \eta_\ell}{\partial A_\ell \, \partial a} = -\frac{(\bar{\eta} - \underline{\eta})(\bar{\alpha}_\ell - a)}{K_\ell(\bar{\alpha}_\ell + a)^3},
+\end{equation*}
+which is positive when $\bar{\alpha}_\ell < a$ (attention and saturation are complements) and negative when $\bar{\alpha}_\ell > a$ (attention and saturation are substitutes). Intuitively, when attention is scarce relative to the saturation threshold ($\bar{\alpha}_\ell < a$), a higher $a$ reduces the \emph{curvature} of the $\eta_\ell$ function, making the marginal return to attention more stable across budget levels.
+
+\noindent\textbf{Part (iii):} From $\tau^0_{\ell,k} = \bar{\tau}^0_k \eta_\ell^{\,\ell}$, differentiate with respect to $A_\ell$:
+\begin{equation*}
+\frac{\partial \tau^0_{\ell,k}}{\partial A_\ell} = \bar{\tau}^0_k \cdot \ell \eta_\ell^{\,\ell-1} \cdot \frac{\partial \eta_\ell}{\partial A_\ell}.
+\end{equation*}
+Since $\partial \eta_\ell / \partial A_\ell > 0$, this derivative is positive. The multiplicative factor $\ell$ implies that the marginal return to attention is larger at deeper layers: raising $A_\ell$ by one unit improves signal preservation more when the cumulative depreciation exponent $\ell$ is high. This generates a \emph{double dividend} of attention at deeper layers: not only is there more attention per signal, but each unit of preservation improvement is amplified by the exponent.
+\end{proof}
+
+\begin{remark}[The Double Dividend of Attention]\label{rem:double_dividend}
+Proposition~\ref{prop:attention_preservation}(iii) reveals a novel economic force: the marginal return to attention is \emph{increasing} in layer depth. At layer $\ell$, increasing $A_\ell$ by $\Delta A$ raises the preservation rate from $\eta_\ell$ to $\eta_\ell + \Delta \eta$, and this improvement is compounded $\ell$ times in the signal precision formula $\tau^0_{\ell,k} \propto \eta_\ell^{\,\ell}$. This creates a strong organizational motive for front-loading attention budgets (Proposition~\ref{prop:front_loading}): early layers have low $\ell$, so the preservation elasticity is small, while later layers---which aggregate already-depreciated signals---benefit disproportionately from attention investment. The double dividend complements the standard ``compounding loss'' intuition: not only does early attention prevent error accumulation, but the \emph{marginal value} of attention itself grows with depth because of the exponent in the depreciation formula.
+\end{remark}
+
+\subsection{Discussion: Why This Is Not ``Concave Benefit + Convex Cost''}
+\label{subsec:not_concave_convex}
+
+We close this section by addressing a potential objection: is the attention-allocation model merely a relabeled version of the ``concave benefit + convex cost = finite optimum'' structure? We argue that it is not, for three reasons.
+
+\textbf{First, the concavity emerges from the technology, not the objective.} In the standard framework, the principal assumes a concave benefit function and a convex cost function to ensure a finite optimum. In our framework, the concavity of $\tau^*_\ell(A_\ell)$ (Proposition \ref{prop:precision_response}) is \emph{derived} from the attention technology: diminishing returns arise because the agent allocates attention to signals in order of quality, not because we assumed a concave production function.
+
+\textbf{Second, the optimization is over a vector, not a scalar.} The HM model optimizes over a scalar effort $e$. Our model optimizes over a vector $\boldsymbol{\alpha}_\ell$ subject to a budget constraint. The solution is a system of $K_\ell$ equations with non-negativity constraints and a binding budget. The structure of the solution---which signals receive attention, which are ignored, and how the allocation changes with parameters---is economically meaningful and empirically testable.
+
+\textbf{Third, the distortion is endogenous and derived relative to the assumed $g_\ell(\cdot)$ technology.} In the standard framework, the distortion parameter is exogenous and the output function is ad hoc. In our framework, the distortion measure $\tilde{\delta}_\ell$ is derived from the optimal attention allocation (Definition \ref{def:single_layer_distortion}), the output function is the precision-aggregation technology (Equation \eqref{eq:effective_precision}), and both are directly connected to observable AI technology.
+
+\begin{remark}[Robustness to functional form]
+The qualitative comparative-statics conclusions (Propositions \ref{prop:distortion_comp_statics}--\ref{prop:cost_min}) do not depend on the specific functional form of $g_\ell(\cdot)$. All that is required is that $g_\ell$ be increasing and concave with $g'_\ell(0) > 0$. The power-function specification $g_\ell(\alpha) = \alpha^\gamma$ is adopted for analytical convenience and because it yields closed-form solutions; the same economic forces operate under any attention technology that exhibits diminishing marginal returns.
+\end{remark}
+
+\subsection{Benchmark Model: The GHM Framework}
+\label{sec:GHM_benchmark}
+
+To isolate the distinctive predictions of our attention-allocation model, we now construct and solve a benchmark formulation that nests our setting within the classical framework of \citet{garicano2000hierarchies} and \citet{holmstrom1991multitask} (henceforth, GHM).
+
+\subsubsection{Model Setup}
+
+Consider a chain of $L$ identical agents indexed by $\ell = 1, \dots, L$. Each agent $\ell$ chooses a scalar effort level $e_\ell \in \mathbb{R}_+$, which represents the precision or quality of the signal that agent $\ell$ transmits upstream.
+
+\begin{assumption}[GHM Cost Structure]\label{ass:GHM_cost}
+The cost function $\psi$ is twice continuously differentiable with:
+\begin{enumerate}[label=(\roman*)]
+\item $\psi(0) = 0$, $\psi'(e) > 0$ for all $e \geq 0$;
+\item $\psi''(e) > 0$ for all $e \geq 0$ (strict convexity);
+\item $\lim_{e \to \infty} \psi'(e) = \infty$ (Inada condition).
+\end{enumerate}
+\end{assumption}
+
+\begin{assumption}[GHM Production Technology]\label{ass:GHM_production}
+The final output quality is given by
+\begin{equation}\label{eq:GHM_production}
+q_L = f\Biggl(\sum_{\ell=1}^{L} e_\ell\Biggr) + \varepsilon, \qquad \varepsilon \sim \mathcal{N}(0, \sigma_\varepsilon^2),
+\end{equation}
+where $f: \mathbb{R}_+ \to \mathbb{R}_+$ is twice continuously differentiable with $f'(x) > 0$, $f''(x) < 0$ for all $x \geq 0$, and satisfies the Inada conditions $f'(0) = \infty$, $\lim_{x \to \infty} f'(x) = 0$.
+\end{assumption}
+
+Agent $\ell$'s utility is:
+\begin{equation}\label{eq:GHM_utility}
+U_\ell = \mathbb{E}[w(q_L)] - \psi(e_\ell) = a + b \cdot f\Biggl(\sum_{j=1}^{L} e_j\Biggr) - \psi(e_\ell).
+\end{equation}
+
+\subsubsection{Equilibrium Effort and Optimal Depth}
+
+Taking the depth $L$ and incentive power $b$ as given, each agent $\ell$ chooses $e_\ell$ to maximize \eqref{eq:GHM_utility}. By symmetry, $e_\ell = e^*$ for all $\ell$. The first-order condition is:
+\begin{equation}\label{eq:GHM_FOC}
+b \cdot f'(L \cdot e^*) = \psi'(e^*).
+\end{equation}
+
+\begin{proposition}[GHM Optimal Depth]\label{prop:GHM_depth}
+Suppose Assumptions \ref{ass:GHM_cost}--\ref{ass:GHM_production} hold and the principal optimally sets $b^* > 0$. Then:
+\begin{enumerate}[label=(\roman*)]
+\item There exists a finite optimal depth $L^*_{\text{GHM}} < \infty$.
+\item As the marginal cost of effort vanishes---formally, as $\psi'(e) \to 0$---the optimal depth diverges:
+\begin{equation}\label{eq:GHM_infinite_depth}
+\lim_{\kappa \to 0} L^*_{\text{GHM}}(\kappa) = \infty.
+\end{equation}
+\item The equilibrium effort per layer satisfies $e^* \to \infty$ as $\kappa \to 0$.
+\end{enumerate}
+\end{proposition}
+
+\begin{proof}
+(i) At $L = 0$, the marginal benefit is strictly positive because $f'(0) = \infty$. As $L \to \infty$, $f'(L \cdot e^*) \to 0$ while $\psi(e^*) > 0$. By continuity, there exists at least one crossing.
+
+(ii) Consider the family $\psi_\kappa(e) = \kappa \cdot \tilde{\psi}(e)$. For any fixed finite $L$, as $\kappa \to 0$, the FOC implies $f'(L \cdot e^*) = (\kappa/b) \tilde{\psi}'(e^*) \to 0$, which requires $L \cdot e^* \to \infty$. The marginal benefit is $O(1)$ while the marginal cost is $O(\kappa)$. Thus the principal always wants to add more layers, and $L^*_{\text{GHM}} \to \infty$.
+\end{proof}
+
+\subsubsection{Complementary Predictions}
+
+In our attention-allocation model, even as the per-unit cost of attention $\kappa \to 0$, each layer faces a \emph{hard budget constraint} $\sum_k \alpha_{\ell,k} \leq A_\ell$. The optimal depth remains finite because:
+\begin{enumerate}[label=(\alph*)]
+\item The budget $A_\ell$ places an upper bound on effective precision.
+\item The transmission factor $\rho_\ell = \tau^*_\ell / \tau^{\text{FB}}_\ell < 1$ is bounded away from 1 by the geometry of the budget constraint, regardless of $\kappa$.
+\item The geometric decay of precision along the chain is driven by the \emph{relative} allocation across signals, not by the absolute cost of attention.
+\end{enumerate}
+
+\begin{table*}[htbp]
+\centering
+\footnotesize
+\setlength{\tabcolsep}{5pt}
+\caption{Model Predictions: Our Framework vs.~GHM Benchmark}
+\label{tab:prediction_comparison}
+\begin{tabular}{@{}>{\raggedright\arraybackslash}p{2.8cm}>{\raggedright\arraybackslash}p{3.5cm}>{\raggedright\arraybackslash}p{3.5cm}>{\raggedright\arraybackslash}p{3.5cm}@{}}
+\toprule
+\textbf{Prediction} & \textbf{Our Model} & \textbf{GHM Benchmark} & \textbf{Empirical Test} \\
+\midrule
+Finite optimal depth ($\kappa \to 0$) & \textbf{Yes.} Budget $A_\ell$ bounds precision regardless of cost. & \textbf{No.} $L^*_{\text{GHM}} \to \infty$ as $\psi'(e) \to 0$. & Observe depth response to API price cuts. \\
+Budget allocation & \textbf{Front-loaded.} Attention concentrates at early layers. & \textbf{Uniform.} Identical effort $e^*$ at all layers. & Compare model sizes across layers. \\
+Signal heterogeneity & \textbf{Reduces distortion.} Selective attention raises $\rho_\ell$. & \textbf{No effect.} Heterogeneity not in FOC. & Homogeneous vs.~heterogeneous inputs. \\
+Depth--precision relation & \textbf{Geometric decay.} $\tau_\ell \propto \rho^{\ell}$. & \textbf{Arithmetic decay.} $L \cdot e^*(L)$. & Error accumulation in chains. \\
+Elasticity identification & \textbf{Identifiable.} From context-accuracy curves. & \textbf{Not identifiable.} $e_\ell$ unobservable. & Attention-weight data from APIs. \\
+\bottomrule
+\end{tabular}
+\end{table*}
+
+\subsubsection{Four Dimensions of Complementarity}
+\label{sec:key_distinctions}
+
+The predictions in Table \ref{tab:prediction_comparison} differ because the two models emphasize different economic primitives. GHM abstracts from attention allocation across heterogeneous signals, while our model abstracts from the team-production and incentive-design problems that GHM was built to analyze. The two frameworks are \emph{complements}: each generates predictions the other does not.
+
+\paragraph{1. Vector vs.~scalar optimization.} Our model generates additional predictions by incorporating \emph{vector optimization}: each layer allocates a budget $A_\ell$ across multiple signals with heterogeneous precisions. This generates \textbf{selective neglect}---the optimal policy concentrates attention on the most informative signals and ignores others. GHM, by abstracting from signal heterogeneity, focuses on \emph{scalar optimization} where the agent chooses a single effort level $e_\ell$.
+
+\paragraph{2. Endogenous vs.~exogenous distortion.} Our model generates additional predictions by making the transmission factor $\rho_\ell = \tau^*_\ell / \tau^{\text{FB}}_\ell$ \textbf{endogenous}: it depends on the signal structure, the attention technology $g_\ell(\cdot)$, and the budget $A_\ell$. GHM abstracts from this channel; any distortion in that framework is \textbf{exogenous}---it would appear as a fixed parameter in the production function $f$.
+
+\paragraph{3. Observable vs.~unobservable inputs.} The attention weights $\alpha_{\ell,k}$ in our model capture, in reduced form, how the model processes different information sources. Modern transformer architectures expose attention maps as byproducts of computation \citep{vaswani2017attention}, which enables direct structural estimation. GHM, by focusing on moral hazard, treats effort $e_\ell$ as classically \textbf{unobservable}.
+
+\paragraph{4. Behavior as $\kappa \to 0$: a complementary prediction.} Proposition \ref{prop:GHM_depth} establishes that $L^*_{\text{GHM}} \to \infty$ when $\psi'(e) \to 0$. Our model generates the complementary prediction that $L^* < \infty$ \emph{even in the limit} because the budget constraint $A_\ell$ creates a hard bound on effective precision. Recent API price reductions represent a shock to $\kappa$. Under GHM, firms should respond by deepening chains indefinitely; under our model, depth should stabilize. The evidence in Section \ref{sec:empirics} supports the latter prediction.
+
+\begin{remark}[What GHM does better]
+The GHM framework naturally accommodates \emph{team production} with free-riding, \emph{optimal incentive design} through the choice of $b$, and \emph{rich contracting} between principal and agents. Our model abstracts from these classical moral-hazard considerations to focus on the novel margin of attention allocation. A fully satisfactory theory would embed our attention-allocation problem within a GHM-style contracting framework; we leave this synthesis to future work.
+\end{remark}
