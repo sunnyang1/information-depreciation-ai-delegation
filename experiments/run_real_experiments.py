@@ -166,6 +166,13 @@ MODEL_REGISTRY: Dict[str, Dict[str, Any]] = {
         "fallback_id": None,
         "description": "TinyLlama 1.1B (minimal, for testing)",
     },
+    "qwen7b": {
+        "hf_id": "Qwen/Qwen2.5-7B-Instruct",
+        "params_B": 7,
+        "context_window": 32768,
+        "fallback_id": "TinyLlama/TinyLlama-1.1B-Chat-v1.0",
+        "description": "Qwen2.5 7B Instruct (public, no HF gate, strong Chinese/English)",
+    },
     "phi2": {
         "hf_id": "microsoft/phi-2",
         "params_B": 2.7,
@@ -463,7 +470,7 @@ class ModelManager:
         if not HAS_TRANSFORMERS:
             raise RuntimeError("transformers not installed")
 
-        tokenizer_kwargs = {"trust_remote_code": True}
+        tokenizer_kwargs = {"trust_remote_code": True, "use_auth_token": True}
         if self.cache_dir:
             tokenizer_kwargs["cache_dir"] = self.cache_dir
 
@@ -490,6 +497,7 @@ class ModelManager:
 
         model_kwargs = {
             "trust_remote_code": True,
+            "use_auth_token": True,
             "torch_dtype": torch.float16 if self.quantization is None else "auto",
         }
         if quantization_config:
