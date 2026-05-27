@@ -138,11 +138,27 @@ if torch.cuda.is_available():
 # Model registry: name -> {hf_id, params_B, context_window}
 MODEL_REGISTRY: Dict[str, Dict[str, Any]] = {
     "7b": {
+        "hf_id": "meta-llama/Llama-2-7b-chat-hf",
+        "params_B": 7,
+        "context_window": 4096,
+        "fallback_id": "TinyLlama/TinyLlama-1.1B-Chat-v1.0",
+        "description": "Llama-2 7B Chat (small, fast). Requires HF token + accepting terms",
+    },
+    "falcon7b": {
+        "hf_id": "tiiuae/falcon-7b-instruct",
+        "params_B": 7,
+        "context_window": 2048,
+        "fallback_id": "TinyLlama/TinyLlama-1.1B-Chat-v1.0",
+        "description": "Falcon-7B Instruct (fully public, no token needed, transformers 4.35 native)",
+    },
+    "mistral7b": {
         "hf_id": "mistralai/Mistral-7B-Instruct-v0.1",
         "params_B": 7,
         "context_window": 8192,
-        "fallback_id": "TinyLlama/TinyLlama-1.1B-Chat-v1.0",
-        "description": "Mistral-7B Instruct v0.1 (public, no HF token needed, strong performance)",
+        "fallback_id": "tiiuae/falcon-7b-instruct",
+        # NOTE: Mistral tokenizer requires tokenizers>=0.15 which conflicts with transformers 4.35.
+        # Use --model_size falcon7b instead, or upgrade transformers to 4.36+.
+        "description": "Mistral-7B Instruct v0.1. REQUIRES transformers>=4.36, currently pinned to 4.35",
     },
     "13b": {
         "hf_id": "meta-llama/Llama-2-13b-chat-hf",
