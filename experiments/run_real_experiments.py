@@ -548,7 +548,12 @@ class ModelManager:
             **model_kwargs,
         )
 
-        if torch.cuda.device_count() == 1 and self.quantization is None:
+        # Only manually move model if NOT using device_map (accelerate handles it otherwise)
+        if (
+            torch.cuda.device_count() == 1
+            and self.quantization is None
+            and model_kwargs.get("device_map") is None
+        ):
             self._model = self._model.to(self.device)
 
         self._model.eval()
