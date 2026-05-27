@@ -142,7 +142,7 @@ MODEL_REGISTRY: Dict[str, Dict[str, Any]] = {
         "hf_id": "meta-llama/Llama-2-13b-chat-hf",
         "params_B": 13,
         "context_window": 4096,
-        "fallback_id": "microsoft/phi-2",
+        "fallback_id": "TinyLlama/TinyLlama-1.1B-Chat-v1.0",
         "description": "Llama-2 13B Chat (medium)",
     },
     "8b-instruct": {
@@ -171,7 +171,10 @@ MODEL_REGISTRY: Dict[str, Dict[str, Any]] = {
         "params_B": 2.7,
         "context_window": 2048,
         "fallback_id": None,
-        "description": "Microsoft Phi-2 (small, good quality)",
+        # NOTE: Phi-2 requires transformers>=4.36.0 for native architecture support.
+        # With transformers==4.35.0, use trust_remote_code=True (already set in loader)
+        # but may still fail if the model config uses newer features.
+        "description": "Microsoft Phi-2 (small, good quality). Requires transformers>=4.36 or trust_remote_code",
     },
 }
 
