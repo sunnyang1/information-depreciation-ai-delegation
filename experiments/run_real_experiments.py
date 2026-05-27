@@ -478,6 +478,11 @@ class ModelManager:
             logger.info(f"Model loaded in {self._load_time:.1f}s")
         except Exception as e:
             logger.error(f"Failed to load {self.model_id}: {e}")
+            # vLLM 0.2.1 bug: cannot re-initialize in same process. Auto-fallback to transformers.
+            if self.use_vllm and "tensor model parallel group is already initialized" in str(e):
+                logger.warning("vLLM parallel group conflict detected. Disabling vLLM and retrying with transformers.")
+                self.use_vllm = False
+                return self.load()
             if self.fallback and self.config["fallback_id"]:
                 fallback_id = self.config["fallback_id"]
                 logger.info(f"Attempting fallback to {fallback_id}")
