@@ -76,8 +76,8 @@ ok "PyTorch安装完成"
 # ============ 3. 安装核心依赖 ============
 info "步骤 3/8: 安装transformers及相关库"
 pip install transformers==4.35.0
-# tokenizers 必须与 transformers 4.35 兼容（Mistral/Qwen 等模型需要 >=0.14）
-pip install "tokenizers>=0.14.0,<0.19.0"
+# tokenizers 必须与 transformers 4.35 兼容（严格 <0.15）
+pip install "tokenizers>=0.14.0,<0.15.0"
 # 先安装兼容版 pyarrow，避免 datasets==2.14.0 导入错误 (PyExtensionType)
 pip install "pyarrow>=12.0.0,<14.0.0"
 pip install datasets==2.14.0
