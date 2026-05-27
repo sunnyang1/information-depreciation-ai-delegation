@@ -138,11 +138,11 @@ if torch.cuda.is_available():
 # Model registry: name -> {hf_id, params_B, context_window}
 MODEL_REGISTRY: Dict[str, Dict[str, Any]] = {
     "7b": {
-        "hf_id": "meta-llama/Llama-2-7b-chat-hf",
+        "hf_id": "unsloth/llama-2-7b-chat",
         "params_B": 7,
         "context_window": 4096,
         "fallback_id": "TinyLlama/TinyLlama-1.1B-Chat-v1.0",
-        "description": "Llama-2 7B Chat (small, fast). Requires HF token + accepting terms",
+        "description": "Unsloth Llama-2-7B Chat (public mirror, no Meta gate needed)",
     },
     "falcon7b": {
         "hf_id": "tiiuae/falcon-7b-instruct",
