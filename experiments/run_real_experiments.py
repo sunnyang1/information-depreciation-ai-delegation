@@ -78,6 +78,12 @@ except ImportError:
     warnings.warn("transformers not installed. Real LLM inference unavailable.")
 
 try:
+    from huggingface_hub import HfFolder
+    HAS_HF_HUB = True
+except ImportError:
+    HAS_HF_HUB = False
+
+try:
     import datasets
     from datasets import load_dataset
     HAS_DATASETS = True
@@ -470,7 +476,14 @@ class ModelManager:
         if not HAS_TRANSFORMERS:
             raise RuntimeError("transformers not installed")
 
-        tokenizer_kwargs = {"trust_remote_code": True, "use_auth_token": True}
+        # Explicitly read HF token (handles custom HF_HOME paths reliably)
+        hf_token = None
+        if HAS_HF_HUB:
+            hf_token = HfFolder.get_token()
+
+        tokenizer_kwargs = {"trust_remote_code": True}
+        if hf_token:
+            tokenizer_kwargs["token"] = hf_token
         if self.cache_dir:
             tokenizer_kwargs["cache_dir"] = self.cache_dir
 
@@ -497,9 +510,10 @@ class ModelManager:
 
         model_kwargs = {
             "trust_remote_code": True,
-            "use_auth_token": True,
             "torch_dtype": torch.float16 if self.quantization is None else "auto",
         }
+        if hf_token:
+            model_kwargs["token"] = hf_token
         if quantization_config:
             model_kwargs["quantization_config"] = quantization_config
         else:
