@@ -21,8 +21,8 @@ info "步骤 0/7: 检查CUDA版本"
 if command -v nvcc &> /dev/null; then
     CUDA_VERSION=$(nvcc --version | grep "release" | sed -n 's/.*release \([0-9]\+\.[0-9]\+\).*/\1/p')
     info "检测到CUDA版本: $CUDA_VERSION"
-    if [[ "$CUDA_VERSION" != "12.1" && "$CUDA_VERSION" != "12.4" && "$CUDA_VERSION" != "12.2" ]]; then
-        warn "推荐CUDA 12.1或12.4，当前是$CUDA_VERSION"
+    if [[ "$CUDA_VERSION" != "12.1" && "$CUDA_VERSION" != "12.4" && "$CUDA_VERSION" != "12.8" ]]; then
+        warn "推荐CUDA 12.4，当前是$CUDA_VERSION"
         warn "vLLM 0.7.0可能需要cu121，继续安装但可能有问题"
     fi
 else
@@ -36,9 +36,9 @@ source /root/miniconda3/bin/activate info_depreciation
 ok "conda环境就绪"
 
 # ============ 2. 安装PyTorch 2.5.1 (CUDA 12.1) ============
-info "步骤 2/7: 安装 PyTorch 2.5.1 (CUDA 12.1)"
+info "步骤 2/7: 安装 PyTorch 2.5.1 (CUDA 12.4)"
 pip install torch==2.5.1 torchvision==0.20.1 torchaudio==2.5.1 \
-    --index-url https://download.pytorch.org/whl/cu121
+    --index-url https://download.pytorch.org/whl/cu124
 ok "PyTorch安装完成"
 
 # ============ 3. 安装核心依赖 ============
