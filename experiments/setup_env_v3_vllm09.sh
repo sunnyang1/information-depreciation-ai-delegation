@@ -1,6 +1,7 @@
 #!/bin/bash
-# setup_env_v3_vllm09.sh - vLLM 0.9.0 + PyTorch 2.7.0 + CUDA 12.8
+# setup_env_v3_vllm09.sh - vLLM 0.9.2 + PyTorch 2.7.0 + CUDA 12.8
 # 推荐GPU: RTX 5090 (Blackwell) / A100 / H100
+# 注意: vLLM 0.9.2 比 0.9.0 更稳定(修复了numerical error和FusedMoE bug)
 # RTX 5090 需要 CUDA 12.8 + PyTorch 2.7 + vLLM 0.9+ 才能支持 Blackwell 架构
 
 set -e
@@ -30,21 +31,25 @@ pip install torch==2.7.0 torchvision==0.22.0 torchaudio==2.7.0 \
 ok "PyTorch安装完成"
 
 info "步骤 3/6: 安装核心依赖"
-pip install transformers==4.48.0
+# transformers 4.52+ 与 vLLM 0.9 配合更稳定
+pip install transformers==4.52.3
 pip install tokenizers==0.21.0
 pip install datasets==2.21.0
 pip install accelerate==0.34.0
 pip install bitsandbytes==0.44.0
 ok "核心依赖完成"
 
-info "步骤 4/6: 安装 vLLM 0.9.0 (支持Blackwell)"
-pip install vllm==0.9.0 || {
-    warn "vLLM 0.9.0安装失败，尝试0.9.2"
-    pip install vllm==0.9.2
-}
+info "步骤 4/6: 安装 vLLM 0.9.2 (比0.9.0更稳定)"
+# vLLM 0.9.0 有已知bug(numerical error, FusedMoE)，社区推荐0.9.2
+pip install vllm==0.9.2
 # 验证Blackwell支持
 python -c "import torch; cap=torch.cuda.get_device_capability(0); print(f'Compute Capability: {cap[0]}.{cap[1]}')"
-ok "vLLM安装完成"
+# vLLM 0.9 默认启用V1引擎不稳定，强制回退V0
+export VLLM_USE_V1=0
+if ! grep -q "VLLM_USE_V1" ~/.bashrc; then
+    echo 'export VLLM_USE_V1=0' >> ~/.bashrc
+fi
+ok "vLLM安装完成(V0引擎)"
 
 info "步骤 5/6: 安装辅助依赖"
 pip install scipy "numpy<2" tqdm pandas matplotlib statsmodels

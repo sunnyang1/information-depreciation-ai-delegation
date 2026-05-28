@@ -1,0 +1,24 @@
+# v3.0 vLLM 0.9.2 版本 - 2026年稳定组合 (RTX 5090 Blackwell)
+# PyTorch 2.7.0 + CUDA 12.8
+torch==2.7.0
+torchvision==0.22.0
+torchaudio==2.7.0
+
+# 核心库 (vLLM 0.9.2 推荐配套版本)
+transformers==4.52.3
+tokenizers==0.21.0
+datasets==2.21.0
+accelerate==0.34.0
+bitsandbytes==0.44.0
+
+# vLLM加速推理 (0.9.2 比 0.9.0 更稳定)
+vllm==0.9.2
+
+# 其他依赖
+scipy
+numpy<2
+tqdm
+pandas
+matplotlib
+statsmodels
+huggingface-hub
