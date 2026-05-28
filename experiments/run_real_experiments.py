@@ -651,8 +651,20 @@ class ModelManager:
         """Generate via transformers."""
         assert self._tokenizer is not None and self._model is not None
 
+        # Apply chat template for instruction-tuned models (Llama-2, etc.)
+        if (
+            hasattr(self._tokenizer, "apply_chat_template")
+            and self._tokenizer.chat_template is not None
+        ):
+            messages = [{"role": "user", "content": prompt}]
+            formatted_prompt = self._tokenizer.apply_chat_template(
+                messages, tokenize=False, add_generation_prompt=True
+            )
+        else:
+            formatted_prompt = prompt
+
         inputs = self._tokenizer(
-            prompt,
+            formatted_prompt,
             return_tensors="pt",
             truncation=True,
             max_length=self.context_window - max_new_tokens,
