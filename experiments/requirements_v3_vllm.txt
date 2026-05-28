@@ -1,0 +1,24 @@
+# v3.0 vLLM版本 - 2026年稳定组合
+# PyTorch 2.5.1 + CUDA 12.1
+torch==2.5.1
+torchvision==0.20.1
+torchaudio==2.5.1
+
+# 核心库
+transformers==4.48.0
+tokenizers==0.21.0
+datasets==2.21.0
+accelerate==0.34.0
+bitsandbytes==0.44.0
+
+# vLLM加速推理
+vllm==0.7.0
+
+# 其他依赖
+scipy
+numpy<2
+tqdm
+pandas
+matplotlib
+statsmodels
+huggingface-hub
