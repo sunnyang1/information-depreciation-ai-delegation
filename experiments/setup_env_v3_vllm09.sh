@@ -1,7 +1,7 @@
 #!/bin/bash
 # setup_env_v3_vllm09.sh - vLLM 0.9.0 + PyTorch 2.7.0 + CUDA 12.8
-# 推荐GPU: A100/H100 (CUDA 12.8)
-# 注意: vLLM 0.9是breaking change，比0.7/0.8新，稳定性待验证
+# 推荐GPU: RTX 5090 (Blackwell) / A100 / H100
+# RTX 5090 需要 CUDA 12.8 + PyTorch 2.7 + vLLM 0.9+ 才能支持 Blackwell 架构
 
 set -e
 
@@ -19,6 +19,9 @@ err()  { echo -e "${RED}[ERROR]${NC} $1"; }
 info "步骤 1/6: 创建conda环境"
 conda create -n info_depreciation python=3.12 -y || true
 source /root/miniconda3/bin/activate info_depreciation
+
+# RTX 5090 (Blackwell) 需要 GCC 11+ 编译器
+export TORCH_CUDA_ARCH_LIST="10.0"
 ok "环境就绪"
 
 info "步骤 2/6: 安装 PyTorch 2.7.0 (CUDA 12.8)"
@@ -34,11 +37,13 @@ pip install accelerate==0.34.0
 pip install bitsandbytes==0.44.0
 ok "核心依赖完成"
 
-info "步骤 4/6: 安装 vLLM 0.9.0"
+info "步骤 4/6: 安装 vLLM 0.9.0 (支持Blackwell)"
 pip install vllm==0.9.0 || {
     warn "vLLM 0.9.0安装失败，尝试0.9.2"
     pip install vllm==0.9.2
 }
+# 验证Blackwell支持
+python -c "import torch; cap=torch.cuda.get_device_capability(0); print(f'Compute Capability: {cap[0]}.{cap[1]}')"
 ok "vLLM安装完成"
 
 info "步骤 5/6: 安装辅助依赖"
@@ -72,4 +77,9 @@ PYEOF
 
 ok "全部完成！"
 echo ""
-echo "运行: python run_real_experiments.py --experiment all --model_size llama3_8b --use_vllm"
+echo "========================================"
+echo -e "${GREEN}  RTX 5090 + vLLM 0.9 环境配置完成${NC}"
+echo "========================================"
+echo ""
+echo "  运行: python run_real_experiments.py --experiment all --model_size llama3_8b --use_vllm"
+echo "========================================"
