@@ -152,13 +152,11 @@ MODEL_REGISTRY: Dict[str, Dict[str, Any]] = {
         "description": "Falcon-7B Instruct (fully public, no token needed, transformers 4.35 native)",
     },
     "mistral7b": {
-        "hf_id": "mistralai/Mistral-7B-Instruct-v0.1",
+        "hf_id": "mistralai/Mistral-7B-Instruct-v0.3",
         "params_B": 7,
-        "context_window": 8192,
-        "fallback_id": "tiiuae/falcon-7b-instruct",
-        # NOTE: Mistral tokenizer requires tokenizers>=0.15 which conflicts with transformers 4.35.
-        # Use --model_size falcon7b instead, or upgrade transformers to 4.36+.
-        "description": "Mistral-7B Instruct v0.1. REQUIRES transformers>=4.36, currently pinned to 4.35",
+        "context_window": 32768,
+        "fallback_id": "Qwen/Qwen2.5-7B-Instruct",
+        "description": "Mistral-7B Instruct v0.3 (public, fast, good quality)",
     },
     "13b": {
         "hf_id": "meta-llama/Llama-2-13b-chat-hf",
@@ -167,12 +165,12 @@ MODEL_REGISTRY: Dict[str, Dict[str, Any]] = {
         "fallback_id": "TinyLlama/TinyLlama-1.1B-Chat-v1.0",
         "description": "Llama-2 13B Chat (medium)",
     },
-    "8b-instruct": {
+    "llama3_8b": {
         "hf_id": "meta-llama/Llama-3.1-8B-Instruct",
         "params_B": 8,
         "context_window": 128_000,
-        "fallback_id": "meta-llama/Llama-3-8B-Instruct",
-        "description": "Llama-3.1 8B Instruct (recommended, best context)",
+        "fallback_id": "mistralai/Mistral-7B-Instruct-v0.3",
+        "description": "Llama-3.1 8B Instruct (public, strong performance, huge context)",
     },
     "70b": {
         "hf_id": "meta-llama/Llama-2-70b-chat-hf",
