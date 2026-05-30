@@ -167,11 +167,11 @@ MODEL_REGISTRY: Dict[str, Dict[str, Any]] = {
         "description": "Llama-2 13B Chat (NousResearch public mirror, no HF gate needed)",
     },
     "llama3_8b": {
-        "hf_id": "meta-llama/Llama-3.1-8B-Instruct",
+        "hf_id": "unsloth/Llama-3.1-8B-Instruct",
         "params_B": 8,
         "context_window": 128_000,
         "fallback_id": "mistralai/Mistral-7B-Instruct-v0.3",
-        "description": "Llama-3.1 8B Instruct (public, strong performance, huge context)",
+        "description": "Llama-3.1 8B Instruct (unsloth public mirror, no HF gate needed, 128K context)",
     },
     "70b": {
         "hf_id": "meta-llama/Llama-2-70b-chat-hf",
