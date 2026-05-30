@@ -188,7 +188,7 @@ Supported model sizes:
 - `"7b"` → `unsloth/llama-2-7b-chat` (public mirror, no Meta gate)
 - `"falcon7b"` → `tiiuae/falcon-7b-instruct` (fully public)
 - `"mistral7b"` → `mistralai/Mistral-7B-Instruct-v0.3` (public, fast)
-- `"13b"` → `meta-llama/Llama-2-13b-chat-hf`
+- `"13b"` → `NousResearch/Llama-2-13b-chat-hf` (public mirror, no HF gate)
 - `"llama3_8b"` → `meta-llama/Llama-3.1-8B-Instruct` (recommended, 128K context)
 - `"70b"` → `meta-llama/Llama-2-70b-chat-hf`
 - `"tiny"` → `TinyLlama/TinyLlama-1.1B-Chat-v1.0`
