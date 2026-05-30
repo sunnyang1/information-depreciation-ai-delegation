@@ -190,7 +190,7 @@ Supported model sizes:
 - `"mistral7b"` → `mistralai/Mistral-7B-Instruct-v0.3` (public, fast)
 - `"13b"` → `NousResearch/Llama-2-13b-chat-hf` (public mirror, no HF gate)
 - `"llama3_8b"` → `unsloth/Llama-3.1-8B-Instruct` (recommended, 128K context, public mirror)
-- `"70b"` → `meta-llama/Llama-2-70b-chat-hf`
+- `"qwen2.5_72b"` → `Qwen/Qwen2.5-72B-Instruct` (public, 128K context, needs A100 80GB or multi-GPU)
 - `"tiny"` → `TinyLlama/TinyLlama-1.1B-Chat-v1.0`
 - `"qwen7b"` → `Qwen/Qwen2.5-7B-Instruct` (public, no HF gate)
 - `"phi2"` → `microsoft/phi-2`

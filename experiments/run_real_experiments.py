@@ -173,12 +173,12 @@ MODEL_REGISTRY: Dict[str, Dict[str, Any]] = {
         "fallback_id": "mistralai/Mistral-7B-Instruct-v0.3",
         "description": "Llama-3.1 8B Instruct (unsloth public mirror, no HF gate needed, 128K context)",
     },
-    "70b": {
-        "hf_id": "meta-llama/Llama-2-70b-chat-hf",
-        "params_B": 70,
-        "context_window": 4096,
-        "fallback_id": None,
-        "description": "Llama-2 70B Chat (large, needs 2+ GPUs)",
+    "qwen2.5_72b": {
+        "hf_id": "Qwen/Qwen2.5-72B-Instruct",
+        "params_B": 72,
+        "context_window": 131_072,
+        "fallback_id": "mistral7b",
+        "description": "Qwen2.5 72B Instruct (public, no HF gate needed, 128K context, needs A100 80GB or multi-GPU)",
     },
     "tiny": {
         "hf_id": "TinyLlama/TinyLlama-1.1B-Chat-v1.0",
