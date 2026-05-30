@@ -40,6 +40,23 @@ check_pytorch_installed() {
     python -c "import torch; print(torch.__version__)" 2>/dev/null || echo "none"
 }
 
+# ============ 辅助函数：初始化conda ============
+init_conda() {
+    # AutoDL 常见路径
+    for prefix in "$HOME/miniconda3" "$HOME/anaconda3" "/opt/miniconda3" "/opt/conda"; do
+        if [ -f "$prefix/etc/profile.d/conda.sh" ]; then
+            . "$prefix/etc/profile.d/conda.sh"
+            return 0
+        fi
+    done
+    # 如果找不到，尝试把 bin 加入 PATH
+    if [ -d "$HOME/miniconda3/bin" ]; then
+        export PATH="$HOME/miniconda3/bin:$PATH"
+        return 0
+    fi
+    return 1
+}
+
 # ============ 辅助函数：检测GPU架构 ============
 detect_gpu_arch() {
     python -c "
@@ -74,7 +91,7 @@ fi
 # ============ 1. 检测预装环境 ============
 info "步骤 1/10: 检测预装环境"
 
-PYTHON_VERSION=$(python --version 2>&1 | awk '{print $2}')
+PYTHON_VERSION=$(python --version 2>&1 | awk '{print $2}' | cut -d. -f1,2)
 PYTORCH_VERSION=$(check_pytorch_installed)
 GPU_ARCH=$(detect_gpu_arch)
 
@@ -94,8 +111,9 @@ if [ "$PYTHON_VERSION" = "3.12" ] && [ "$PYTORCH_VERSION" != "none" ]; then
     ENV_TYPE="prebuilt"
 else
     info "未检测到预装环境，创建conda环境 'info_depreciation' (Python 3.12)"
+    init_conda || err "无法找到 conda，请确认 AutoDL 镜像已预装 miniconda"
     conda create -n info_depreciation python=3.12 -y
-    source activate info_depreciation
+    conda activate info_depreciation
     ok "conda环境创建完成"
     ENV_TYPE="conda"
 fi
@@ -148,14 +166,17 @@ fi
 info "步骤 4/10: 安装transformers及相关库"
 
 # 统一使用 transformers>=4.40.0，支持 Qwen2.5、Llama-3.1 等新架构
-pip install transformers>=4.40.0
+pip install "transformers>=4.40.0"
 pip install tokenizers
 
 # pyarrow 兼容性处理
 pip install "pyarrow>=12.0.0,<14.0.0"
 pip install datasets==2.14.0
-pip install accelerate>=0.24.0
+pip install "accelerate>=0.24.0"
 pip install scipy numpy tqdm pandas matplotlib statsmodels
+
+# 模型 tokenizer 运行时必需（Llama/Qwen 的 SPM、部分架构依赖）
+pip install sentencepiece protobuf einops || warn "可选依赖安装失败（部分模型可能受影响）"
 ok "核心依赖安装完成"
 
 # ============ 5. 安装量化与加速库 ============
@@ -164,9 +185,9 @@ info "步骤 5/10: 安装量化与加速库"
 # bitsandbytes: Blackwell需要新版本
 if [ "$GPU_ARCH" = "blackwell" ]; then
     info "Blackwell架构：安装新版 bitsandbytes"
-    pip install bitsandbytes>=0.43.0 || warn "新版 bitsandbytes 安装失败"
+    pip install "bitsandbytes>=0.43.0" || warn "新版 bitsandbytes 安装失败"
 else
-    pip install bitsandbytes==0.41.0 || warn "bitsandbytes安装失败"
+    pip install "bitsandbytes>=0.41.0" || warn "bitsandbytes安装失败"
 fi
 ok "量化库处理完成"
 
@@ -176,9 +197,9 @@ info "步骤 6/10: 安装vLLM加速推理库"
 if [ "$GPU_ARCH" = "blackwell" ]; then
     warn "Blackwell架构 (RTX 5090) 下 vLLM 0.2.1 不兼容"
     info "尝试安装新版 vLLM (>=0.11.0) ..."
-    pip install vllm>=0.11.0 || warn "新版vLLM安装失败，将使用HuggingFace原生推理"
+    pip install "vllm>=0.11.0" || warn "新版vLLM安装失败，将使用HuggingFace原生推理"
 else
-    pip install vllm==0.2.1 || warn "vLLM安装失败，将使用HuggingFace原生推理"
+    pip install "vllm>=0.2.1" || warn "vLLM安装失败，将使用HuggingFace原生推理"
 fi
 ok "vLLM处理完成"
 
@@ -276,10 +297,11 @@ cat > "$EXP_DIR/run_simulation.sh" << 'EOF'
 # 一键运行全部模拟实验（无需GPU）
 set -e
 cd "$(dirname "$0")"
-if [ -n "$CONDA_DEFAULT_ENV" ]; then
-    : # 已在conda环境中
-else
-    conda activate info_depreciation 2>/dev/null || source activate info_depreciation
+if [ -z "$CONDA_DEFAULT_ENV" ]; then
+    for p in "$HOME/miniconda3" "$HOME/anaconda3" "/opt/miniconda3" "/opt/conda"; do
+        [ -f "$p/etc/profile.d/conda.sh" ] && . "$p/etc/profile.d/conda.sh" && break
+    done
+    conda activate info_depreciation 2>/dev/null || true
 fi
 
 echo "========================================"
@@ -317,10 +339,11 @@ cat > "$EXP_DIR/run_real.sh" << 'EOF'
 # 一键运行真实LLM实验（需要GPU）
 set -e
 cd "$(dirname "$0")"
-if [ -n "$CONDA_DEFAULT_ENV" ]; then
-    : # 已在conda环境中
-else
-    conda activate info_depreciation 2>/dev/null || source activate info_depreciation
+if [ -z "$CONDA_DEFAULT_ENV" ]; then
+    for p in "$HOME/miniconda3" "$HOME/anaconda3" "/opt/miniconda3" "/opt/conda"; do
+        [ -f "$p/etc/profile.d/conda.sh" ] && . "$p/etc/profile.d/conda.sh" && break
+    done
+    conda activate info_depreciation 2>/dev/null || true
 fi
 
 echo "========================================"
@@ -343,10 +366,11 @@ cat > "$EXP_DIR/run_single.sh" << 'EOF'
 # 运行单个实验（用法: bash run_single.sh exp01）
 set -e
 cd "$(dirname "$0")"
-if [ -n "$CONDA_DEFAULT_ENV" ]; then
-    : # 已在conda环境中
-else
-    conda activate info_depreciation 2>/dev/null || source activate info_depreciation
+if [ -z "$CONDA_DEFAULT_ENV" ]; then
+    for p in "$HOME/miniconda3" "$HOME/anaconda3" "/opt/miniconda3" "/opt/conda"; do
+        [ -f "$p/etc/profile.d/conda.sh" ] && . "$p/etc/profile.d/conda.sh" && break
+    done
+    conda activate info_depreciation 2>/dev/null || true
 fi
 
 EXP_ID="${1:-exp01}"
