@@ -81,7 +81,7 @@ The comparative statics of the endogenous preservation rate are immediate from d
 \end{equation}
 confirming that $\eta_\ell$ is increasing and concave in the attention budget. The saturation parameter $a$ controls the sensitivity of preservation to attention: when $a$ is small, preservation responds strongly to attention increases; when $a$ is large, large attention budgets are required to raise $\eta_\ell$ meaningfully above $\underline{\eta}$.
 
-The assumption that the base preservation rate is uniform across layers and signals (conditional on $\bar{\alpha}_\ell$) is a simplification; we discuss heterogeneous depreciation in Section \ref{sec:extensions}.
+The assumption that the base preservation rate is uniform across layers and signals (conditional on $\bar{\alpha}_\ell$) is a simplification; we discuss heterogeneous depreciation in Section \ref{sec:extensions}. We operationalize task complexity $t$ as $t = \log(1 + \text{reasoning\_steps}) / \log(1 + \text{max\_steps})$, which is measurable from benchmark metadata and API logs.
 
 \begin{remark}[Scalar-State Simplification]\label{rem:scalar}
 In the baseline analysis, we set $d = 1$ (scalar state) and $H_{\ell,k} = 1$ for all $\ell, k$. This simplifies the precision-aggregation technology to scalar addition: $\tau_\ell = \tau_{\ell}^{\text{prior}} + \sum_k g_\ell(\alpha_{\ell,k}) \tau^0_{\ell,k}$. The scalar assumption is restrictive when signals reveal different dimensions of a multi-faceted state. In Section \ref{sec:extensions}, we sketch how the model extends to $d > 1$ with a precision matrix; the key insight---that attention scarcity bounds depth through compounding precision loss---is preserved.

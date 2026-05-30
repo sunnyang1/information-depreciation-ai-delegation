@@ -1,0 +1,90 @@
+name: CI
+
+on:
+  push:
+    branches: [main, master]
+  pull_request:
+    branches: [main, master]
+
+jobs:
+  lint-and-typecheck:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Cache pip packages
+        uses: actions/cache@v3
+        with:
+          path: ~/.cache/pip
+          key: ${{ runner.os }}-pip-${{ hashFiles('requirements.txt', 'requirements-dev.txt') }}
+
+      - name: Install dependencies
+        run: |
+          pip install -r requirements-dev.txt
+          pip install -r experiments/requirements.txt
+
+      - name: Lint with flake8
+        run: |
+          flake8 experiments/ simulation_regression.py \
+            --max-line-length=100 \
+            --ignore=E501,W503,E741,E731,E402 \
+            --count \
+            --show-source \
+            --statistics
+
+      - name: Type check with mypy
+        run: |
+          cd experiments
+          mypy --ignore-missing-imports --follow-imports=silent \
+            exp_framework.py run.py registry.py run_real_experiments.py
+
+  smoke-test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        run: |
+          pip install numpy scipy pandas matplotlib statsmodels
+
+      - name: Smoke test core engine
+        run: |
+          cd experiments
+          python -c "
+import sys; sys.path.insert(0, '.')
+import exps
+from registry import get_experiment
+for eid in ['exp01', 'exp02', 'exp03', 'exp04', 'exp05']:
+    result = get_experiment(eid).run(n_trials=3, total_budget=50000)
+    assert result.get('status') != 'failed', f'{eid} failed'
+    print(f'  {eid}: OK')
+print('All smoke tests passed')
+"
+
+  unit-test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        run: |
+          pip install numpy scipy pandas matplotlib pytest pytest-cov
+
+      - name: Run unit tests
+        run: |
+          pytest tests/ -v --cov=experiments --cov-report=term-missing

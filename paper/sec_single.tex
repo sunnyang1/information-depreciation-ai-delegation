@@ -47,6 +47,43 @@ See Appendix \ref{app:proof_prop1}.
 
 Intuition. The optimality condition \eqref{eq:interior_foc} says that the agent equalizes the marginal precision product across all signals that receive positive attention. Signals with higher intrinsic precision receive more attention not because they are ``preferred'' in any absolute sense, but because they yield higher marginal returns: each unit of attention devoted to a high-quality signal extracts more information than a unit devoted to a low-quality signal. This is the familiar logic of equalizing marginal products across inputs, applied here to the allocation of attention rather than labor or capital.
 
+\subsection{From Attention Budget to Preservation Rate}
+\label{subsec:ri_to_eta}
+
+We now provide the formal mapping from the attention budget $A_\ell$ to the endogenous preservation rate $\eta_\ell$, addressing the reviewer's request for an explicit derivation of how rational inattention translates into the preservation bounds in Assumption~\ref{ass:endogenous_eta}.
+
+\begin{proposition}[Rational Inattention to Preservation Rate]\label{prop:ri_to_eta}
+Under the normal--normal conjugate model with attention budget $A_\ell$ and $K_\ell$ signals, the mutual information between the state $\omega$ and the attention-weighted signal vector is
+\begin{equation}\label{eq:mutual_info}
+I\bigl(\omega; \mathbf{s}_\ell \mid \boldsymbol{\alpha}_\ell\bigr) = \frac{1}{2} \log\left(1 + \frac{\tau_\ell(\boldsymbol{\alpha}_\ell)}{\tau^{\text{prior}}_\ell}\right),
+\end{equation}
+and the preservation rate $\eta_\ell$ is calibrated as
+\begin{equation}\label{eq:eta_calibration}
+\eta_\ell = \underline{\eta} + (\bar{\eta} - \underline{\eta}) \cdot \frac{I(\omega; \mathbf{s}_\ell)}{I_{\max}},
+\end{equation}
+where $I_{\max} = \frac{1}{2}\log(1 + \tau^{\text{FB}}_\ell / \tau^{\text{prior}}_\ell)$ is the first-best mutual information. Under the power-function specification \eqref{eq:power_function}, this yields Assumption~\ref{ass:endogenous_eta} with saturation parameter $a = (\tau^{\text{prior}}_\ell)^{1/\gamma} / \tau^{\text{prior}}_\ell$.
+\end{proposition}
+
+\begin{proof}
+\textbf{Step 1: Mutual information.} With normal prior $\omega \sim \mathcal{N}(\mu, (\tau^{\text{prior}}_\ell)^{-1})$ and normal signals $s_{\ell,k} = \omega + \varepsilon_{\ell,k}$ where $\varepsilon_{\ell,k} \sim \mathcal{N}(0, (\alpha^\gamma_{\ell,k} \tau^0_{\ell,k})^{-1})$, the posterior precision is $\tau_\ell = \tau^{\text{prior}}_\ell + \sum_k \alpha^\gamma_{\ell,k} \tau^0_{\ell,k}$. The mutual information is the reduction in entropy:
+\begin{equation*}
+I(\omega; \mathbf{s}_\ell) = h(\omega) - h(\omega \mid \mathbf{s}_\ell) = \frac{1}{2}\log\left(\frac{\tau_\ell}{\tau^{\text{prior}}_\ell}\right) = \frac{1}{2}\log\left(1 + \frac{\tau_\ell - \tau^{\text{prior}}_\ell}{\tau^{\text{prior}}_\ell}\right),
+\end{equation*}
+which is \eqref{eq:mutual_info}.
+
+\textbf{Step 2: From mutual information to preservation.} The mutual information is bounded above by the first-best: $I \leq I_{\max} = \frac{1}{2}\log(1 + \tau^{\text{FB}}_\ell / \tau^{\text{prior}}_\ell)$. The ratio $I / I_{\max} \in [0,1]$ measures how close the attention allocation is to full information extraction. Mapping this ratio to the preservation rate through a monotone increasing function yields \eqref{eq:eta_calibration}.
+
+\textbf{Step 3: Calibration to Assumption~\ref{ass:endogenous_eta}.} Under the power-function technology, the effective precision is $\tau_\ell = \tau^{\text{prior}}_\ell + A^\gamma_\ell \cdot \bar{\tau}$ for some $\bar{\tau} > 0$ (when signals are symmetric). The mutual information becomes
+\begin{equation*}
+I(A_\ell) = \frac{1}{2}\log\left(1 + \frac{A^\gamma_\ell \bar{\tau}}{\tau^{\text{prior}}_\ell}\right).
+\end{equation*}
+For small $A_\ell$, $I(A_\ell) \approx \frac{1}{2} A^\gamma_\ell \bar{\tau} / \tau^{\text{prior}}_\ell$, which is concave. A Michaelis--Menten approximation $I(A_\ell) / I_{\max} \approx A_\ell / (A_\ell + a)$ with $a = (\tau^{\text{prior}}_\ell)^{1/\gamma} / \bar{\tau}^{1/\gamma}$ yields equation \eqref{eq:endogenous_eta}. \hfill $\square$
+\end{proof}
+
+\begin{remark}[Scope of the Calibration]
+Proposition~\ref{prop:ri_to_eta} provides a micro-foundation for Assumption~\ref{ass:endogenous_eta} under the normal--normal conjugate model. The key insight is that the preservation rate $\eta_\ell$ is not an arbitrary function of $A_\ell$ but a monotone transformation of the normalized mutual information. The functional form (Michaelis--Menten) is an analytically convenient approximation to the log-form mutual information; the qualitative conclusions do not depend on this approximation.
+\end{remark}
+
 For the power-function specification $g_\ell(\alpha) = \alpha^\gamma$, the first-order condition becomes:
 \begin{equation}\label{eq:closed_form}
 \alpha^*_{\ell,k} = \biggl(\frac{\gamma \tau^0_{\ell,k}}{\lambda_\ell}\biggr)^{\frac{1}{1-\gamma}} \quad \text{(interior solutions)}.
@@ -298,6 +335,26 @@ We close this section by addressing a potential objection: is the attention-allo
 \textbf{Second, the optimization is over a vector, not a scalar.} The HM model optimizes over a scalar effort $e$. Our model optimizes over a vector $\boldsymbol{\alpha}_\ell$ subject to a budget constraint. The solution is a system of $K_\ell$ equations with non-negativity constraints and a binding budget. The structure of the solution---which signals receive attention, which are ignored, and how the allocation changes with parameters---is economically meaningful and empirically testable.
 
 \textbf{Third, the distortion is endogenous and derived relative to the assumed $g_\ell(\cdot)$ technology.} In the standard framework, the distortion parameter is exogenous and the output function is ad hoc. In our framework, the distortion measure $\tilde{\delta}_\ell$ is derived from the optimal attention allocation (Definition \ref{def:single_layer_distortion}), the output function is the precision-aggregation technology (Equation \eqref{eq:effective_precision}), and both are directly connected to observable AI technology.
+
+\begin{lemma}[Sufficient Conditions for Front-Loading]\label{lem:front_loading_sufficient}
+Suppose the value function $V(\tau)$ is increasing and concave, and the optimal precision $\tau^*_\ell(A_\ell)$ is increasing and concave in $A_\ell$ for each $\ell$. Then the objective $V(\tau^*_L)$ is supermodular in $(A_\ell, A_{\ell'})$ for $\ell < \ell'$. Consequently, the optimal budget allocation satisfies $A^*_0 \geq A^*_1 \geq \cdots \geq A^*_L$.
+\end{lemma}
+
+\begin{proof}
+Consider two adjacent layers $\ell$ and $\ell+1$. The cross-partial derivative of top-layer precision with respect to $(A_\ell, A_{\ell+1})$ is:
+\begin{equation*}
+\frac{\partial^2 \tau^*_L}{\partial A_\ell \, \partial A_{\ell+1}} = \frac{\partial \rho_\ell}{\partial A_\ell} \cdot \frac{\partial \tau^*_{\ell+1}}{\partial A_{\ell+1}} > 0,
+\end{equation*}
+since $\partial \rho_\ell / \partial A_\ell > 0$ (Proposition~\ref{prop:distortion_comp_statics}) and $\partial \tau^*_{\ell+1} / \partial A_{\ell+1} > 0$ (Proposition~\ref{prop:precision_response}). Because $V(\cdot)$ is increasing and concave, the composition preserves supermodularity. By Topkis's theorem, the optimal allocation is front-loaded.
+\end{proof}
+
+\begin{corollary}[Back-Loading Boundary]\label{cor:back_loading}
+Back-loading can be optimal when the value function is convex in precision over the relevant range, or when the final action has state-dependent stakes that increase with depth. Formally, if $V''(\tau) > 0$ for $\tau \in [\underline{\tau}, \bar{\tau}]$, then there exist parameter values for which $A^*_0 < A^*_L$.
+\end{corollary}
+
+\begin{proof}
+When $V''(\tau) > 0$, the composition $V(\tau^*_L)$ may be submodular in $(A_\ell, A_{\ell'})$ because the convexity of $V$ can dominate the concavity of $\tau^*_L$. If the net cross-partial is negative, Topkis's theorem implies back-loading. A numerical example is provided in the supplementary simulation experiments.
+\end{proof}
 
 \begin{remark}[Robustness to functional form]
 The qualitative comparative-statics conclusions (Propositions \ref{prop:distortion_comp_statics}--\ref{prop:cost_min}) do not depend on the specific functional form of $g_\ell(\cdot)$. All that is required is that $g_\ell$ be increasing and concave with $g'_\ell(0) > 0$. The power-function specification $g_\ell(\alpha) = \alpha^\gamma$ is adopted for analytical convenience and because it yields closed-form solutions; the same economic forces operate under any attention technology that exhibits diminishing marginal returns.

@@ -38,7 +38,6 @@ Usage:
 
 from __future__ import annotations
 
-import os
 import sys
 import json
 import csv
@@ -51,15 +50,12 @@ import re
 import math
 import warnings
 from dataclasses import dataclass, field, asdict
-from typing import List, Dict, Tuple, Optional, Any, Union
+from typing import List, Dict, Tuple, Optional, Any
 from datetime import datetime
 from pathlib import Path
 from enum import Enum
-from collections import defaultdict
-
 import numpy as np
 import torch
-import torch.nn.functional as F
 
 # ---------------------------------------------------------------------------
 # Optional dependencies -- handle gracefully
@@ -69,9 +65,9 @@ try:
     from transformers import (
         AutoModelForCausalLM,
         AutoTokenizer,
-        pipeline,
         BitsAndBytesConfig,
     )
+
     HAS_TRANSFORMERS = True
 except ImportError:
     HAS_TRANSFORMERS = False
@@ -79,6 +75,7 @@ except ImportError:
 
 try:
     from huggingface_hub import HfFolder
+
     HAS_HF_HUB = True
 except ImportError:
     HAS_HF_HUB = False
@@ -86,6 +83,7 @@ except ImportError:
 try:
     import datasets
     from datasets import load_dataset
+
     HAS_DATASETS = True
 except ImportError:
     HAS_DATASETS = False
@@ -93,12 +91,14 @@ except ImportError:
 
 try:
     from vllm import LLM, SamplingParams
+
     HAS_VLLM = True
 except ImportError:
     HAS_VLLM = False
 
 try:
-    import bitsandbytes as bnb
+    import bitsandbytes  # noqa: F401  # pylint: disable=unused-import
+
     HAS_BITSANDBYTES = True
 except ImportError:
     HAS_BITSANDBYTES = False
@@ -106,6 +106,7 @@ except ImportError:
 try:
     from scipy.optimize import curve_fit
     from scipy import stats
+
     HAS_SCIPY = True
 except ImportError:
     HAS_SCIPY = False
@@ -149,7 +150,7 @@ MODEL_REGISTRY: Dict[str, Dict[str, Any]] = {
         "params_B": 7,
         "context_window": 2048,
         "fallback_id": "TinyLlama/TinyLlama-1.1B-Chat-v1.0",
-        "description": "Falcon-7B Instruct (fully public, no token needed, transformers 4.35 native)",
+        "description": "Falcon-7B Instruct (fully public, no token needed, transformers 4.35 native)",  # noqa: E501
     },
     "mistral7b": {
         "hf_id": "mistralai/Mistral-7B-Instruct-v0.3",
@@ -199,9 +200,9 @@ MODEL_REGISTRY: Dict[str, Dict[str, Any]] = {
         "context_window": 2048,
         "fallback_id": None,
         # NOTE: Phi-2 requires transformers>=4.36.0 for native architecture support.
-        # With transformers==4.35.0, use trust_remote_code=True (already set in loader)
+        # With transformers==4.35.0, use trust_remote_code=False (already set in loader)
         # but may still fail if the model config uses newer features.
-        "description": "Microsoft Phi-2 (small, good quality). Requires transformers>=4.36 or trust_remote_code",
+        "description": "Microsoft Phi-2 (small, good quality). Requires transformers>=4.36 or trust_remote_code",  # noqa: E501
     },
 }
 
@@ -214,18 +215,101 @@ DEFAULT_N_TRIALS = 100
 DEFAULT_N_FACTS = 100
 NEEDLE_TEMPLATE = "The secret code of {entity} is {code}."
 NEEDLE_ENTITIES = [
-    "Alice", "Bob", "Charlie", "Diana", "Eve", "Frank", "Grace", "Henry",
-    "Ivy", "Jack", "Kate", "Leo", "Mia", "Noah", "Olivia", "Paul",
-    "Quinn", "Rachel", "Sam", "Tina", "Uma", "Victor", "Wendy", "Xander",
-    "Yara", "Zack", "Anna", "Ben", "Clara", "David", "Emma", "Finn",
-    "Gina", "Hugo", "Isla", "James", "Kara", "Liam", "Nora", "Oscar",
-    "Pia", "Ryan", "Sara", "Tom", "Una", "Vince", "Will", "Zoe",
-    "Aaron", "Bella", "Caleb", "Daisy", "Ethan", "Fiona", "George", "Hannah",
-    "Ian", "Julia", "Kevin", "Luna", "Max", "Nina", "Owen", "Penny",
-    "Quentin", "Rose", "Sean", "Tara", "Uri", "Vera", "Wade", "Xenia",
-    "Yvonne", "Zane", "Adam", "Beth", "Carl", "Dana", "Eric", "Faith",
-    "Gavin", "Hope", "Ivan", "Jade", "Kyle", "Lily", "Mark", "Nell",
-    "Otto", "Page", "Reed", "Sage", "Troy", "Val", "Walt",
+    "Alice",
+    "Bob",
+    "Charlie",
+    "Diana",
+    "Eve",
+    "Frank",
+    "Grace",
+    "Henry",
+    "Ivy",
+    "Jack",
+    "Kate",
+    "Leo",
+    "Mia",
+    "Noah",
+    "Olivia",
+    "Paul",
+    "Quinn",
+    "Rachel",
+    "Sam",
+    "Tina",
+    "Uma",
+    "Victor",
+    "Wendy",
+    "Xander",
+    "Yara",
+    "Zack",
+    "Anna",
+    "Ben",
+    "Clara",
+    "David",
+    "Emma",
+    "Finn",
+    "Gina",
+    "Hugo",
+    "Isla",
+    "James",
+    "Kara",
+    "Liam",
+    "Nora",
+    "Oscar",
+    "Pia",
+    "Ryan",
+    "Sara",
+    "Tom",
+    "Una",
+    "Vince",
+    "Will",
+    "Zoe",
+    "Aaron",
+    "Bella",
+    "Caleb",
+    "Daisy",
+    "Ethan",
+    "Fiona",
+    "George",
+    "Hannah",
+    "Ian",
+    "Julia",
+    "Kevin",
+    "Luna",
+    "Max",
+    "Nina",
+    "Owen",
+    "Penny",
+    "Quentin",
+    "Rose",
+    "Sean",
+    "Tara",
+    "Uri",
+    "Vera",
+    "Wade",
+    "Xenia",
+    "Yvonne",
+    "Zane",
+    "Adam",
+    "Beth",
+    "Carl",
+    "Dana",
+    "Eric",
+    "Faith",
+    "Gavin",
+    "Hope",
+    "Ivan",
+    "Jade",
+    "Kyle",
+    "Lily",
+    "Mark",
+    "Nell",
+    "Otto",
+    "Page",
+    "Reed",
+    "Sage",
+    "Troy",
+    "Val",
+    "Walt",
 ]
 
 # Quantization config map
@@ -239,8 +323,10 @@ QUANT_CONFIGS = {
 # Budget allocation strategies
 # =============================================================================
 
+
 class BudgetStrategy(str, Enum):
     """Budget allocation strategy across chain layers."""
+
     UNIFORM = "uniform"
     FRONT_LOADED = "front_loaded"
     BACK_LOADED = "back_loaded"
@@ -288,7 +374,7 @@ def allocate_budget(
         sizes[-1] += diff
     elif strategy == BudgetStrategy.GEOMETRIC_FRONT:
         # Halving each layer: A, A/2, A/4, ...
-        weights = np.array([1.0 / (2 ** i) for i in range(n_layers)])
+        weights = np.array([1.0 / (2**i) for i in range(n_layers)])
         weights = weights / weights.sum()
         sizes = (weights * total_budget).astype(int).tolist()
         diff = total_budget - sum(sizes)
@@ -309,9 +395,11 @@ def allocate_budget(
 # Data classes for experiment results
 # =============================================================================
 
+
 @dataclass
 class InferenceMetrics:
     """Metrics from a single inference call."""
+
     latency_ms: float
     input_tokens: int
     output_tokens: int
@@ -323,6 +411,7 @@ class InferenceMetrics:
 @dataclass
 class ChainLayerResult:
     """Result from a single chain layer."""
+
     layer_idx: int
     model_name: str
     context_size: int
@@ -334,6 +423,7 @@ class ChainLayerResult:
 @dataclass
 class ChainResult:
     """Result from running a full chain."""
+
     depth: int
     strategy: str
     total_budget: int
@@ -347,6 +437,7 @@ class ChainResult:
 @dataclass
 class ExperimentResult:
     """Aggregated experiment result."""
+
     experiment_id: str
     depth: int
     strategy: Optional[str]
@@ -361,6 +452,7 @@ class ExperimentResult:
 @dataclass
 class DepreciationEstimate:
     """Estimated information retention at a given layer."""
+
     layer: int
     retention_rate: float
     ci_lower: float
@@ -372,6 +464,7 @@ class DepreciationEstimate:
 @dataclass
 class NeedleFact:
     """A single needle fact for needle-in-haystack experiments."""
+
     entity: str
     code: str
     full_text: str
@@ -381,6 +474,7 @@ class NeedleFact:
 # =============================================================================
 # 1. ModelManager: Manage LLM loading and inference
 # =============================================================================
+
 
 class ModelManager:
     """
@@ -421,8 +515,7 @@ class ModelManager:
         """
         if model_size not in MODEL_REGISTRY:
             raise ValueError(
-                f"Unknown model_size '{model_size}'. "
-                f"Available: {list(MODEL_REGISTRY.keys())}"
+                f"Unknown model_size '{model_size}'. " f"Available: {list(MODEL_REGISTRY.keys())}"
             )
         if use_vllm and not HAS_VLLM:
             logger.warning("vLLM not installed, falling back to transformers")
@@ -474,11 +567,13 @@ class ModelManager:
             self._load_time = time.time() - t0
             self._loaded = True
             logger.info(f"Model loaded in {self._load_time:.1f}s")
-        except Exception as e:
-            logger.error(f"Failed to load {self.model_id}: {e}")
+        except (RuntimeError, OSError, ValueError) as e:
+            logger.error("Failed to load %s: %s", self.model_id, e)
             # vLLM 0.2.1 bug: cannot re-initialize in same process. Auto-fallback to transformers.
             if self.use_vllm and "tensor model parallel group is already initialized" in str(e):
-                logger.warning("vLLM parallel group conflict detected. Disabling vLLM and retrying with transformers.")
+                logger.warning(
+                    "vLLM parallel group conflict detected. Disabling vLLM and retrying with transformers."  # noqa: E501
+                )
                 self.use_vllm = False
                 return self.load()
             if self.fallback and self.config["fallback_id"]:
@@ -500,13 +595,13 @@ class ModelManager:
         if HAS_HF_HUB:
             hf_token = HfFolder.get_token()
 
-        tokenizer_kwargs = {"trust_remote_code": True}
+        tokenizer_kwargs = {"trust_remote_code": False}
         if hf_token:
             tokenizer_kwargs["token"] = hf_token
         if self.cache_dir:
             tokenizer_kwargs["cache_dir"] = self.cache_dir
 
-        self._tokenizer = AutoTokenizer.from_pretrained(
+        self._tokenizer = AutoTokenizer.from_pretrained(  # nosec B615
             self.model_id,
             **tokenizer_kwargs,
         )
@@ -516,7 +611,6 @@ class ModelManager:
         # Build quantization config
         quantization_config = None
         if self.quantization and HAS_BITSANDBYTES:
-            qcfg = QUANT_CONFIGS.get(self.quantization, {})
             if self.quantization == "4bit":
                 quantization_config = BitsAndBytesConfig(
                     load_in_4bit=True,
@@ -528,7 +622,7 @@ class ModelManager:
                 quantization_config = BitsAndBytesConfig(load_in_8bit=True)
 
         model_kwargs = {
-            "trust_remote_code": True,
+            "trust_remote_code": False,
             "torch_dtype": torch.float16 if self.quantization is None else "auto",
         }
         if hf_token:
@@ -541,7 +635,7 @@ class ModelManager:
         if self.cache_dir:
             model_kwargs["cache_dir"] = self.cache_dir
 
-        self._model = AutoModelForCausalLM.from_pretrained(
+        self._model = AutoModelForCausalLM.from_pretrained(  # nosec B615
             self.model_id,
             **model_kwargs,
         )
@@ -555,11 +649,9 @@ class ModelManager:
             self._model = self._model.to(self.device)
 
         self._model.eval()
-        logger.info(
-            f"  Model on: {next(self._model.parameters()).device}"
-        )
+        logger.info(f"  Model on: {next(self._model.parameters()).device}")
         if torch.cuda.is_available():
-            mem_mb = torch.cuda.max_memory_allocated() / 1024 ** 2
+            mem_mb = torch.cuda.max_memory_allocated() / 1024**2
             logger.info(f"  GPU memory: {mem_mb:.0f} MB")
 
     def _load_vllm(self) -> None:
@@ -568,7 +660,7 @@ class ModelManager:
         self._vllm_model = LLM(
             model=self.model_id,
             tensor_parallel_size=max(1, gpu_count),
-            trust_remote_code=True,
+            trust_remote_code=False,
             dtype="float16",
             download_dir=self.cache_dir,
         )
@@ -604,11 +696,11 @@ class ModelManager:
             self.load()
 
         t_start = time.time()
-        mem_before = (
-            torch.cuda.memory_allocated() / 1024 ** 2
-            if torch.cuda.is_available()
-            else 0.0
-        )
+        if torch.cuda.is_available():
+            torch.cuda.reset_peak_memory_stats()
+            mem_before = torch.cuda.memory_allocated() / 1024**2
+        else:
+            mem_before = 0.0
 
         if self.use_vllm:
             text, in_tok, out_tok = self._generate_vllm(
@@ -621,11 +713,10 @@ class ModelManager:
 
         t_end = time.time()
         latency = (t_end - t_start) * 1000  # ms
-        mem_after = (
-            torch.cuda.max_memory_allocated() / 1024 ** 2
-            if torch.cuda.is_available()
-            else 0.0
-        )
+        if torch.cuda.is_available():
+            mem_after = torch.cuda.max_memory_allocated() / 1024**2
+        else:
+            mem_after = 0.0
 
         metrics = InferenceMetrics(
             latency_ms=latency,
@@ -665,7 +756,7 @@ class ModelManager:
             formatted_prompt,
             return_tensors="pt",
             truncation=True,
-            max_length=self.context_window - max_new_tokens,
+            max_length=max(1, self.context_window - max_new_tokens),
         )
         input_ids = inputs["input_ids"].to(self.device)
         in_tokens = input_ids.shape[1]
@@ -689,25 +780,21 @@ class ModelManager:
                     self.device = device
 
                 def __call__(self, input_ids, scores, **kwargs):
-                    generated = self.tokenizer.decode(
-                        input_ids[0], skip_special_tokens=True
-                    )
+                    generated = self.tokenizer.decode(input_ids[0], skip_special_tokens=True)
                     for s in self.stop_strings:
                         if s in generated:
                             return True
                     return False
 
-            gen_kwargs["stopping_criteria"] = StoppingCriteriaList([
-                StopOnStrings(self._tokenizer, stop_sequences, self.device)
-            ])
+            gen_kwargs["stopping_criteria"] = StoppingCriteriaList(
+                [StopOnStrings(self._tokenizer, stop_sequences, self.device)]
+            )
 
         with torch.no_grad():
             outputs = self._model.generate(input_ids, **gen_kwargs)
 
         out_tokens = outputs.shape[1] - in_tokens
-        generated_text = self._tokenizer.decode(
-            outputs[0][in_tokens:], skip_special_tokens=True
-        )
+        generated_text = self._tokenizer.decode(outputs[0][in_tokens:], skip_special_tokens=True)
         return generated_text.strip(), in_tokens, out_tokens
 
     def _generate_vllm(
@@ -767,9 +854,7 @@ class ModelManager:
         for i in range(0, len(prompts), batch_size):
             batch = prompts[i : i + batch_size]
             if self.use_vllm:
-                batch_results = self._generate_batch_vllm(
-                    batch, max_new_tokens, temperature, top_p
-                )
+                batch_results = self._generate_batch_vllm(batch, max_new_tokens, temperature, top_p)
             else:
                 batch_results = self._generate_batch_transformers(
                     batch, max_new_tokens, temperature, top_p
@@ -819,9 +904,7 @@ class ModelManager:
     ) -> List[Tuple[str, InferenceMetrics]]:
         """Batch generation via transformers (manual batching)."""
         t_start = time.time()
-        max_prompt_len = (
-            self.context_window - max_new_tokens
-        )
+        max_prompt_len = max(1, self.context_window - max_new_tokens)
 
         inputs = self._tokenizer(
             prompts,
@@ -906,15 +989,13 @@ class ModelManager:
         return self._loaded
 
     def __repr__(self) -> str:
-        return (
-            f"ModelManager({self.model_id}, "
-            f"vllm={self.use_vllm}, quant={self.quantization})"
-        )
+        return f"ModelManager({self.model_id}, " f"vllm={self.use_vllm}, quant={self.quantization})"
 
 
 # =============================================================================
 # 2. DatasetLoader: Load SQuAD, HotpotQA, GSM8K, Needle-in-Haystack
 # =============================================================================
+
 
 class DatasetLoader:
     """
@@ -936,7 +1017,9 @@ class DatasetLoader:
     # ------------------------------------------------------------------
     # SQuAD
     # ------------------------------------------------------------------
-    def load_squad(self, split: str = "validation", max_samples: Optional[int] = None) -> List[Dict[str, str]]:
+    def load_squad(
+        self, split: str = "validation", max_samples: Optional[int] = None
+    ) -> List[Dict[str, str]]:
         """
         Load SQuAD v2 dataset.
 
@@ -950,9 +1033,14 @@ class DatasetLoader:
         logger.info(f"Loading SQuAD v2 ({split})...")
         if HAS_DATASETS:
             try:
-                ds = load_dataset("squad_v2", split=split, cache_dir=self.cache_dir)
-            except Exception as e:
-                logger.warning(f"Failed to load squad_v2: {e}, using mock data")
+                ds = load_dataset(
+                    "squad_v2",
+                    split=split,
+                    cache_dir=self.cache_dir,
+                    revision="2584d278565800ad75a6f68c697dcce5d5ba8c17",
+                )
+            except (ConnectionError, OSError, ValueError) as e:
+                logger.warning("Failed to load squad_v2: %s, using mock data", e)
                 return self._mock_squad(max_samples or 50)
         else:
             logger.warning("datasets library not available, using mock data")
@@ -964,23 +1052,25 @@ class DatasetLoader:
                 break
             answers = item.get("answers", {})
             answer_texts = answers.get("text", [])
-            results.append({
-                "id": item.get("id", f"squad_{i}"),
-                "context": item["context"],
-                "question": item["question"],
-                "answers": answer_texts if answer_texts else [""],
-            })
+            results.append(
+                {
+                    "id": item.get("id", f"squad_{i}"),
+                    "context": item["context"],
+                    "question": item["question"],
+                    "answers": answer_texts if answer_texts else [""],
+                }
+            )
         logger.info(f"  Loaded {len(results)} SQuAD samples")
         return results
 
     def _mock_squad(self, n: int = 50) -> List[Dict[str, str]]:
         """Generate mock SQuAD-style data for testing."""
         contexts = [
-            "The University of Notre Dame began late on the bitterly cold afternoon of November 26, 1842, when Father Edward Sorin, C.S.C., a 28-year-old French priest, arrived at the Snow Fields along the St. Joseph River in Indiana.",
-            "The Eiffel Tower is a wrought-iron lattice tower on the Champ de Mars in Paris, France. It is named after the engineer Gustave Eiffel, whose company designed and built the tower.",
-            "Photosynthesis is a process used by plants and other organisms to convert light energy into chemical energy that, through cellular respiration, can later be released to fuel the organism's activities.",
-            "The Great Wall of China is a series of fortifications that were built across the historical northern borders of ancient Chinese states and Imperial China as protection against various nomadic groups.",
-            "Machine learning is a branch of artificial intelligence (AI) and computer science which focuses on the use of data and algorithms to imitate the way that humans learn, gradually improving its accuracy.",
+            "The University of Notre Dame began late on the bitterly cold afternoon of November 26, 1842, when Father Edward Sorin, C.S.C., a 28-year-old French priest, arrived at the Snow Fields along the St. Joseph River in Indiana.",  # noqa: E501
+            "The Eiffel Tower is a wrought-iron lattice tower on the Champ de Mars in Paris, France. It is named after the engineer Gustave Eiffel, whose company designed and built the tower.",  # noqa: E501
+            "Photosynthesis is a process used by plants and other organisms to convert light energy into chemical energy that, through cellular respiration, can later be released to fuel the organism's activities.",  # noqa: E501
+            "The Great Wall of China is a series of fortifications that were built across the historical northern borders of ancient Chinese states and Imperial China as protection against various nomadic groups.",  # noqa: E501
+            "Machine learning is a branch of artificial intelligence (AI) and computer science which focuses on the use of data and algorithms to imitate the way that humans learn, gradually improving its accuracy.",  # noqa: E501
         ]
         questions = [
             "When did the University of Notre Dame begin?",
@@ -999,19 +1089,23 @@ class DatasetLoader:
         results = []
         for i in range(n):
             idx = i % len(contexts)
-            results.append({
-                "id": f"mock_squad_{i}",
-                "context": contexts[idx],
-                "question": questions[idx],
-                "answers": answers[idx],
-            })
+            results.append(
+                {
+                    "id": f"mock_squad_{i}",
+                    "context": contexts[idx],
+                    "question": questions[idx],
+                    "answers": answers[idx],
+                }
+            )
         logger.info(f"  Generated {len(results)} mock SQuAD samples")
         return results
 
     # ------------------------------------------------------------------
     # HotpotQA
     # ------------------------------------------------------------------
-    def load_hotpotqa(self, split: str = "validation", max_samples: Optional[int] = None) -> List[Dict[str, str]]:
+    def load_hotpotqa(
+        self, split: str = "validation", max_samples: Optional[int] = None
+    ) -> List[Dict[str, str]]:
         """
         Load HotpotQA (multi-hop reasoning).
 
@@ -1025,9 +1119,15 @@ class DatasetLoader:
         logger.info(f"Loading HotpotQA ({split})...")
         if HAS_DATASETS:
             try:
-                ds = load_dataset("hotpot_qa", "distractor", split=split, cache_dir=self.cache_dir)
-            except Exception as e:
-                logger.warning(f"Failed to load hotpot_qa: {e}, using mock data")
+                ds = load_dataset(
+                    "hotpot_qa",
+                    "distractor",
+                    split=split,
+                    cache_dir=self.cache_dir,
+                    revision="1dcd9de6a9a78c4e7c131d9085db331703cca7e9",
+                )
+            except (ConnectionError, OSError, ValueError) as e:
+                logger.warning("Failed to load hotpot_qa: %s, using mock data", e)
                 return self._mock_hotpotqa(max_samples or 50)
         else:
             return self._mock_hotpotqa(max_samples or 50)
@@ -1039,12 +1139,14 @@ class DatasetLoader:
             # Flatten context paragraphs
             paragraphs = item.get("context", {}).get("sentences", [])
             flat = " ".join([" ".join(sents) for sents in paragraphs])
-            results.append({
-                "id": item.get("_id", f"hotpot_{i}"),
-                "context": flat,
-                "question": item["question"],
-                "answer": item.get("answer", ""),
-            })
+            results.append(
+                {
+                    "id": item.get("_id", f"hotpot_{i}"),
+                    "context": flat,
+                    "question": item["question"],
+                    "answer": item.get("answer", ""),
+                }
+            )
         logger.info(f"  Loaded {len(results)} HotpotQA samples")
         return results
 
@@ -1052,44 +1154,54 @@ class DatasetLoader:
         """Generate mock HotpotQA data."""
         data = [
             {
-                "context": "The Statue of Liberty was a gift from France to the United States. It was designed by French sculptor Frederic Auguste Bartholdi. Gustave Eiffel designed the internal structure. The statue was dedicated on October 28, 1886.",
-                "question": "Who designed the internal structure of the Statue of Liberty and what country gifted it?",
+                "context": "The Statue of Liberty was a gift from France to the United States. It was designed by French sculptor Frederic Auguste Bartholdi. Gustave Eiffel designed the internal structure. The statue was dedicated on October 28, 1886.",  # noqa: E501
+                "question": "Who designed the internal structure of the Statue of Liberty and what country gifted it?",  # noqa: E501
                 "answer": "Gustave Eiffel; France",
             },
             {
-                "context": "Marie Curie was a Polish physicist and chemist. She won the Nobel Prize in Physics in 1903 and the Nobel Prize in Chemistry in 1911. She was the first woman to win a Nobel Prize.",
+                "context": "Marie Curie was a Polish physicist and chemist. She won the Nobel Prize in Physics in 1903 and the Nobel Prize in Chemistry in 1911. She was the first woman to win a Nobel Prize.",  # noqa: E501
                 "question": "What prizes did Marie Curie win and when?",
                 "answer": "Nobel Prize in Physics 1903, Nobel Prize in Chemistry 1911",
             },
             {
-                "context": "The Amazon River is in South America. It is the largest river by discharge volume of water in the world. It flows through Brazil, Peru, and Colombia. The Amazon rainforest surrounds it.",
-                "question": "Which countries does the Amazon River flow through and what surrounds it?",
+                "context": "The Amazon River is in South America. It is the largest river by discharge volume of water in the world. It flows through Brazil, Peru, and Colombia. The Amazon rainforest surrounds it.",  # noqa: E501
+                "question": "Which countries does the Amazon River flow through and what surrounds it?",  # noqa: E501
                 "answer": "Brazil, Peru, Colombia; Amazon rainforest",
             },
         ]
         results = []
         for i in range(n):
             item = data[i % len(data)]
-            results.append({
-                "id": f"mock_hotpot_{i}",
-                "context": item["context"],
-                "question": item["question"],
-                "answer": item["answer"],
-            })
+            results.append(
+                {
+                    "id": f"mock_hotpot_{i}",
+                    "context": item["context"],
+                    "question": item["question"],
+                    "answer": item["answer"],
+                }
+            )
         logger.info(f"  Generated {len(results)} mock HotpotQA samples")
         return results
 
     # ------------------------------------------------------------------
     # GSM8K
     # ------------------------------------------------------------------
-    def load_gsm8k(self, split: str = "test", max_samples: Optional[int] = None) -> List[Dict[str, str]]:
+    def load_gsm8k(
+        self, split: str = "test", max_samples: Optional[int] = None
+    ) -> List[Dict[str, str]]:
         """Load GSM8K math problems."""
         logger.info(f"Loading GSM8K ({split})...")
         if HAS_DATASETS:
             try:
-                ds = load_dataset("gsm8k", "main", split=split, cache_dir=self.cache_dir)
-            except Exception as e:
-                logger.warning(f"Failed to load gsm8k: {e}, using mock")
+                ds = load_dataset(
+                    "gsm8k",
+                    "main",
+                    split=split,
+                    cache_dir=self.cache_dir,
+                    revision="e9fadbde7ef61800ab287b5fa9bcb9f8f377713f",
+                )
+            except (ConnectionError, OSError, ValueError) as e:
+                logger.warning("Failed to load gsm8k: %s, using mock", e)
                 return self._mock_gsm8k(max_samples or 50)
         else:
             return self._mock_gsm8k(max_samples or 50)
@@ -1101,20 +1213,31 @@ class DatasetLoader:
             answer = item.get("answer", "")
             # Extract final number
             final_answer = answer.split("####")[-1].strip() if "####" in answer else answer
-            results.append({
-                "id": f"gsm8k_{i}",
-                "question": item["question"],
-                "answer": final_answer,
-                "full_answer": answer,
-            })
+            results.append(
+                {
+                    "id": f"gsm8k_{i}",
+                    "question": item["question"],
+                    "answer": final_answer,
+                    "full_answer": answer,
+                }
+            )
         logger.info(f"  Loaded {len(results)} GSM8K samples")
         return results
 
     def _mock_gsm8k(self, n: int = 50) -> List[Dict[str, str]]:
         problems = [
-            {"question": "Janet has 24 ducks. She buys 5 more. How many ducks does she have?", "answer": "29"},
-            {"question": "A train travels 60 miles per hour for 3 hours. How far does it go?", "answer": "180"},
-            {"question": "Apples cost $2 each. Bananas cost $1 each. If you buy 3 apples and 4 bananas, how much do you spend?", "answer": "10"},
+            {
+                "question": "Janet has 24 ducks. She buys 5 more. How many ducks does she have?",
+                "answer": "29",
+            },
+            {
+                "question": "A train travels 60 miles per hour for 3 hours. How far does it go?",
+                "answer": "180",
+            },
+            {
+                "question": "Apples cost $2 each. Bananas cost $1 each. If you buy 3 apples and 4 bananas, how much do you spend?",  # noqa: E501
+                "answer": "10",
+            },
         ]
         return [{"id": f"mock_gsm8k_{i}", **problems[i % len(problems)]} for i in range(n)]
 
@@ -1146,31 +1269,33 @@ class DatasetLoader:
         for i, entity in enumerate(entities[:n_facts]):
             code = f"CODE-{random.randint(1000, 9999)}-{i}"
             text = NEEDLE_TEMPLATE.format(entity=entity, code=code)
-            facts.append(NeedleFact(
-                entity=entity,
-                code=code,
-                full_text=text,
-                layer_inserted=0,
-            ))
+            facts.append(
+                NeedleFact(
+                    entity=entity,
+                    code=code,
+                    full_text=text,
+                    layer_inserted=0,
+                )
+            )
             fact_texts.append(text)
 
         if base_context is None:
             # Generate filler text
             filler_paragraphs = [
                 "The history of human civilization spans thousands of years.",
-                "Ancient Egypt built pyramids that still stand today as monuments to their engineering prowess.",
-                "The Roman Empire once controlled vast territories across Europe, Asia, and Africa.",
-                "During the Renaissance, artists like Leonardo da Vinci and Michelangelo created masterpieces.",
+                "Ancient Egypt built pyramids that still stand today as monuments to their engineering prowess.",  # noqa: E501
+                "The Roman Empire once controlled vast territories across Europe, Asia, and Africa.",  # noqa: E501
+                "During the Renaissance, artists like Leonardo da Vinci and Michelangelo created masterpieces.",  # noqa: E501
                 "The Industrial Revolution transformed society with new manufacturing processes.",
                 "In the 20th century, two world wars reshaped the geopolitical landscape.",
-                "The invention of the transistor led to the digital revolution we experience today.",
+                "The invention of the transistor led to the digital revolution we experience today.",  # noqa: E501
                 "Modern science continues to push the boundaries of human knowledge.",
                 "Climate change poses significant challenges for future generations.",
-                "Space exploration has taken humans to the Moon and sent probes beyond our solar system.",
-                "Artificial intelligence represents one of the most transformative technologies of our era.",
+                "Space exploration has taken humans to the Moon and sent probes beyond our solar system.",  # noqa: E501
+                "Artificial intelligence represents one of the most transformative technologies of our era.",  # noqa: E501
                 "Global trade networks connect economies across all continents.",
                 "Education remains a cornerstone of societal progress and individual opportunity.",
-                "Medical advances have dramatically increased human lifespan over the past century.",
+                "Medical advances have dramatically increased human lifespan over the past century.",  # noqa: E501
                 "Renewable energy sources are becoming increasingly competitive with fossil fuels.",
             ]
             # Build long context by repeating and shuffling filler
@@ -1199,18 +1324,21 @@ class DatasetLoader:
         """Generate questions to test fact retrieval."""
         questions = []
         for fact in facts:
-            questions.append({
-                "id": f"needle_{fact.entity}",
-                "question": f"What is the secret code of {fact.entity}?",
-                "answer": fact.code,
-                "entity": fact.entity,
-            })
+            questions.append(
+                {
+                    "id": f"needle_{fact.entity}",
+                    "question": f"What is the secret code of {fact.entity}?",
+                    "answer": fact.code,
+                    "entity": fact.entity,
+                }
+            )
         return questions
 
 
 # =============================================================================
 # 3. LLMChain: Multi-layer LLM inference chain
 # =============================================================================
+
 
 class LLMChain:
     """
@@ -1383,10 +1511,10 @@ class LLMChain:
         return results
 
 
-
 # =============================================================================
 # 4. ExperimentRunner: Run all 3 experiments
 # =============================================================================
+
 
 class ExperimentRunner:
     """
@@ -1427,21 +1555,32 @@ class ExperimentRunner:
         return self.checkpoint_dir / f"{experiment}_checkpoint.json"
 
     def _save_checkpoint(self, experiment: str, data: Dict) -> None:
-        """Save experiment checkpoint."""
+        """Save experiment checkpoint atomically (write-temp-then-rename)."""
         path = self._checkpoint_path(experiment)
-        with open(path, "w") as f:
-            json.dump(data, f, indent=2)
-        logger.info(f"Checkpoint saved: {path}")
+        tmp_path = path.with_suffix(".tmp")
+        try:
+            with open(tmp_path, "w", encoding="utf-8") as f:
+                json.dump(data, f, indent=2)
+            tmp_path.replace(path)
+            logger.info("Checkpoint saved: %s", path)
+        except (OSError, json.JSONDecodeError) as e:
+            logger.error("Failed to save checkpoint: %s", e)
+            if tmp_path.exists():
+                tmp_path.unlink()
 
     def _load_checkpoint(self, experiment: str) -> Optional[Dict]:
-        """Load experiment checkpoint if exists."""
+        """Load experiment checkpoint if exists and valid."""
         path = self._checkpoint_path(experiment)
-        if path.exists():
-            with open(path) as f:
+        if not path.exists():
+            return None
+        try:
+            with open(path, "r", encoding="utf-8") as f:
                 data = json.load(f)
-            logger.info(f"Resumed from checkpoint: {path}")
+            logger.info("Resumed from checkpoint: %s", path)
             return data
-        return None
+        except (OSError, json.JSONDecodeError) as e:
+            logger.warning("Corrupted checkpoint %s: %s. Starting fresh.", path, e)
+            return None
 
     # ------------------------------------------------------------------
     # Experiment 1: Depth-Accuracy Tradeoff
@@ -1493,9 +1632,7 @@ class ExperimentRunner:
             results = []
 
         # Load dataset
-        examples = self.dataset_loader.load_squad(
-            split="validation", max_samples=max_samples
-        )
+        examples = self.dataset_loader.load_squad(split="validation", max_samples=max_samples)
 
         # Build chain (single model for all layers)
         models = {i: self.model_manager for i in range(max(depths) + 1)}
@@ -1529,8 +1666,8 @@ class ExperimentRunner:
                     f1_scores.append(f1)
                     latencies.append(result.total_latency_ms)
                     total_tokens.append(result.total_tokens_used)
-                except Exception as e:
-                    logger.error(f"    Error on example {i}: {e}")
+                except (RuntimeError, ValueError, IndexError) as e:
+                    logger.error("    Error on example %s: %s", i, e)
                     continue
 
             mean_f1 = float(np.mean(f1_scores)) if f1_scores else 0.0
@@ -1541,7 +1678,7 @@ class ExperimentRunner:
             # Theoretical precision retained
             avg_context = total_budget // (depth + 1)
             eta_est = self._estimate_eta_from_context(avg_context)
-            precision_retained = eta_est ** depth
+            precision_retained = eta_est**depth
 
             exp_result = ExperimentResult(
                 experiment_id=f"depth_{depth}",
@@ -1557,6 +1694,7 @@ class ExperimentRunner:
                     "f1_scores": f1_scores[:10],  # Save subset
                     "avg_context_per_layer": avg_context,
                     "eta_estimate": eta_est,
+                    "avg_tokens": avg_tokens,
                 },
             )
             results.append(exp_result)
@@ -1568,10 +1706,13 @@ class ExperimentRunner:
             )
 
             # Save checkpoint after each depth
-            self._save_checkpoint(experiment_name, {
-                "completed_depths": completed_depths,
-                "results": [asdict(r) for r in results],
-            })
+            self._save_checkpoint(
+                experiment_name,
+                {
+                    "completed_depths": completed_depths,
+                    "results": [asdict(r) for r in results],
+                },
+            )
 
         # Statistical summary
         f1s = [r.metric_value for r in results]
@@ -1614,17 +1755,15 @@ class ExperimentRunner:
         ]
         experiment_name = "front_loading"
 
-        logger.info("\n" + "=" * 70)
+        logger.info("\n%s", "=" * 70)
         logger.info("EXPERIMENT 2: Front-Loading Validation")
-        logger.info("=" * 70)
+        logger.info("%s", "=" * 70)
         logger.info(f"  Depth: L={depth}")
         logger.info(f"  Budget: {total_budget:,} tokens")
         logger.info(f"  Strategies: {[s.value for s in strategies]}")
 
         # Load dataset
-        examples = self.dataset_loader.load_hotpotqa(
-            split="validation", max_samples=max_samples
-        )
+        examples = self.dataset_loader.load_hotpotqa(split="validation", max_samples=max_samples)
 
         models = {i: self.model_manager for i in range(depth + 1)}
         chain = LLMChain(models=models)
@@ -1639,9 +1778,7 @@ class ExperimentRunner:
                 ckpt = self._load_checkpoint(f"{experiment_name}_{strategy.value}")
                 if ckpt and ckpt.get("completed"):
                     logger.info(f"    Skipping {strategy.value} (completed)")
-                    all_results[strategy.value] = [
-                        ExperimentResult(**r) for r in ckpt["results"]
-                    ]
+                    all_results[strategy.value] = [ExperimentResult(**r) for r in ckpt["results"]]
                     continue
 
             f1_scores = []
@@ -1664,8 +1801,8 @@ class ExperimentRunner:
                     f1 = compute_f1(result.final_output, [ex["answer"]])
                     f1_scores.append(f1)
                     latencies.append(result.total_latency_ms)
-                except Exception as e:
-                    logger.error(f"    Error on example {i}: {e}")
+                except (RuntimeError, ValueError, IndexError) as e:
+                    logger.error("    Error on example %s: %s", i, e)
                     continue
 
             mean_f1 = float(np.mean(f1_scores)) if f1_scores else 0.0
@@ -1696,23 +1833,23 @@ class ExperimentRunner:
                 f"Allocation={allocations}"
             )
 
-            self._save_checkpoint(f"{experiment_name}_{strategy.value}", {
-                "completed": True,
-                "results": [asdict(exp_result)],
-            })
+            self._save_checkpoint(
+                f"{experiment_name}_{strategy.value}",
+                {
+                    "completed": True,
+                    "results": [asdict(exp_result)],
+                },
+            )
 
         # Rank strategies
-        means = {
-            s: np.mean([r.metric_value for r in res])
-            for s, res in all_results.items()
-        }
+        means = {s: np.mean([r.metric_value for r in res]) for s, res in all_results.items()}
         ranking = sorted(means.items(), key=lambda x: -x[1])
         logger.info(f"\n  Ranking: {' > '.join([f'{s}({m:.3f})' for s, m in ranking])}")
 
         pred_confirmed = (
-            ranking[0][0] == BudgetStrategy.FRONT_LOADED.value and
-            ranking[1][0] == BudgetStrategy.UNIFORM.value and
-            ranking[2][0] == BudgetStrategy.BACK_LOADED.value
+            ranking[0][0] == BudgetStrategy.FRONT_LOADED.value
+            and ranking[1][0] == BudgetStrategy.UNIFORM.value
+            and ranking[2][0] == BudgetStrategy.BACK_LOADED.value
         )
         logger.info(f"  Prediction confirmed: {pred_confirmed}")
 
@@ -1744,9 +1881,9 @@ class ExperimentRunner:
         """
         experiment_name = "eta_estimation"
 
-        logger.info("\n" + "=" * 70)
+        logger.info("\n%s", "=" * 70)
         logger.info("EXPERIMENT 3: Information Depreciation Rate (eta)")
-        logger.info("=" * 70)
+        logger.info("%s", "=" * 70)
         logger.info(f"  Facts: {n_facts}")
         logger.info(f"  Max depth: {max_depth}")
 
@@ -1796,8 +1933,8 @@ class ExperimentRunner:
                     # Check if answer contains the correct code
                     if q["answer"].lower() in result.final_output.lower():
                         retained_count += 1
-                except Exception as e:
-                    logger.error(f"    Error on fact {i}: {e}")
+                except (RuntimeError, ValueError, IndexError) as e:
+                    logger.error("    Error on fact %s: %s", i, e)
                     continue
 
             retention_rate = retained_count / n_facts
@@ -1829,17 +1966,20 @@ class ExperimentRunner:
 
         # Fill theoretical values
         for e in estimates:
-            e.theoretical = eta_estimated ** e.layer
+            e.theoretical = eta_estimated**e.layer
 
         logger.info(f"\n  Estimated eta = {eta_estimated:.3f}")
         logger.info(f"  R-squared of exponential fit: {r_squared:.3f}")
 
-        self._save_checkpoint(experiment_name, {
-            "completed": True,
-            "estimates": [asdict(e) for e in estimates],
-            "eta": eta_estimated,
-            "r_squared": r_squared,
-        })
+        self._save_checkpoint(
+            experiment_name,
+            {
+                "completed": True,
+                "estimates": [asdict(e) for e in estimates],
+                "eta": eta_estimated,
+                "r_squared": r_squared,
+            },
+        )
 
         self.results[experiment_name] = estimates
         return estimates
@@ -1874,6 +2014,7 @@ class ExperimentRunner:
 # 5. ResultsAnalyzer: Analyze results, fit models, export LaTeX/JSON/CSV
 # =============================================================================
 
+
 class ResultsAnalyzer:
     """
     Analyzes experiment results and exports in multiple formats.
@@ -1900,18 +2041,14 @@ class ResultsAnalyzer:
         return float(np.mean(values)), float(np.std(values))
 
     @staticmethod
-    def confidence_interval(
-        values: List[float], confidence: float = 0.95
-    ) -> Tuple[float, float]:
+    def confidence_interval(values: List[float], confidence: float = 0.95) -> Tuple[float, float]:
         """Compute confidence interval for mean."""
         if not values:
             return 0.0, 0.0
         mean = np.mean(values)
         se = stats.sem(values) if HAS_SCIPY else np.std(values) / math.sqrt(len(values))
         if HAS_SCIPY:
-            ci = stats.t.interval(
-                confidence, len(values) - 1, loc=mean, scale=se
-            )
+            ci = stats.t.interval(confidence, len(values) - 1, loc=mean, scale=se)
             return ci if ci else (mean, mean)
         else:
             z = 1.96  # approximate for 95%
@@ -1935,9 +2072,9 @@ class ResultsAnalyzer:
                 return obj.value
             raise TypeError(f"Object of type {type(obj)} is not JSON serializable")
 
-        with open(path, "w") as f:
+        with open(path, "w", encoding="utf-8") as f:
             json.dump(results, f, indent=2, default=serialize)
-        logger.info(f"Results saved to {path}")
+        logger.info("Results saved to path")
         return str(path)
 
     # ------------------------------------------------------------------
@@ -1953,7 +2090,7 @@ class ResultsAnalyzer:
             return ""
         path = self.output_dir / filename
         fieldnames = list(records[0].keys())
-        with open(path, "w", newline="") as f:
+        with open(path, "w", newline="", encoding="utf-8") as f:
             writer = csv.DictWriter(f, fieldnames=fieldnames)
             writer.writeheader()
             for record in records:
@@ -1967,7 +2104,7 @@ class ResultsAnalyzer:
                     else:
                         flat[k] = v
                 writer.writerow(flat)
-        logger.info(f"CSV saved to {path}")
+        logger.info("CSV saved to path")
         return str(path)
 
     # ------------------------------------------------------------------
@@ -1993,11 +2130,13 @@ class ResultsAnalyzer:
                 f"{r.depth} & {r.metric_value:.3f} & {r.metric_std:.3f} & "
                 f"{r.precision_retained:.3f} & {r.latency_ms:.0f} \\"
             )
-        lines.extend([
-            r"\bottomrule",
-            r"\end{tabular}",
-            r"\end{table}",
-        ])
+        lines.extend(
+            [
+                r"\bottomrule",
+                r"\end{tabular}",
+                r"\end{table}",
+            ]
+        )
         return "\n".join(lines)
 
     def latex_table_front_loading(
@@ -2020,11 +2159,7 @@ class ResultsAnalyzer:
         for strategy, res_list in results.items():
             vals = [r.metric_value for r in res_list]
             means[strategy] = np.mean(vals) if vals else 0.0
-        ranking = {
-            s: i + 1 for i, (s, _) in enumerate(
-                sorted(means.items(), key=lambda x: -x[1])
-            )
-        }
+        ranking = {s: i + 1 for i, (s, _) in enumerate(sorted(means.items(), key=lambda x: -x[1]))}
 
         for strategy, res_list in results.items():
             r = res_list[0]
@@ -2035,11 +2170,13 @@ class ResultsAnalyzer:
                 f"{r.metric_std:.3f} & {alloc_str} & {ranking[strategy]} \\"
             )
 
-        lines.extend([
-            r"\bottomrule",
-            r"\end{tabular}",
-            r"\end{table}",
-        ])
+        lines.extend(
+            [
+                r"\bottomrule",
+                r"\end{tabular}",
+                r"\end{table}",
+            ]
+        )
         return "\n".join(lines)
 
     def latex_table_eta(
@@ -2063,11 +2200,13 @@ class ResultsAnalyzer:
                 f"[{e.ci_lower:.3f}, {e.ci_upper:.3f}] & "
                 f"{e.theoretical:.3f} \\"
             )
-        lines.extend([
-            r"\bottomrule",
-            r"\end{tabular}",
-            r"\end{table}",
-        ])
+        lines.extend(
+            [
+                r"\bottomrule",
+                r"\end{tabular}",
+                r"\end{table}",
+            ]
+        )
         return "\n".join(lines)
 
     def export_all_latex(
@@ -2091,9 +2230,9 @@ class ResultsAnalyzer:
         content += "\n\n\\vspace{1em}\n\n"
         content += self.latex_table_eta(exp3_estimates)
 
-        with open(path, "w") as f:
+        with open(path, "w", encoding="utf-8") as f:
             f.write(content)
-        logger.info(f"LaTeX tables saved to {path}")
+        logger.info("LaTeX tables saved to path")
         return str(path)
 
     # ------------------------------------------------------------------
@@ -2121,7 +2260,11 @@ class ResultsAnalyzer:
                 f"Precision={r.precision_retained:.3f}"
             )
         f1s = [r.metric_value for r in exp1]
-        pattern = "hump_shaped" if len(f1s) > 2 and f1s.index(max(f1s)) not in [0, len(f1s)-1] else "monotonic"
+        pattern = (
+            "hump_shaped"
+            if len(f1s) > 2 and f1s.index(max(f1s)) not in [0, len(f1s) - 1]
+            else "monotonic"
+        )
         lines.append(f"  Pattern: {pattern}")
 
         # Exp 2
@@ -2129,7 +2272,9 @@ class ResultsAnalyzer:
         means = {s: np.mean([r.metric_value for r in res]) for s, res in exp2.items()}
         for s, m in sorted(means.items(), key=lambda x: -x[1]):
             lines.append(f"  {s}: F1={m:.3f}")
-        pred_ok = means.get("front_loaded", 0) > means.get("uniform", -1) > means.get("back_loaded", -2)
+        pred_ok = (
+            means.get("front_loaded", 0) > means.get("uniform", -1) > means.get("back_loaded", -2)
+        )
         lines.append(f"  Prediction (front > uniform > back): {pred_ok}")
 
         # Exp 3
@@ -2149,6 +2294,7 @@ class ResultsAnalyzer:
 # Utility functions
 # =============================================================================
 
+
 def compute_f1(prediction: str, references: List[str]) -> float:
     """
     Compute token-level F1 score between prediction and references.
@@ -2160,6 +2306,7 @@ def compute_f1(prediction: str, references: List[str]) -> float:
     Returns:
         F1 score in [0, 1].
     """
+
     def _normalize(text: str) -> str:
         """Normalize text: lowercase, remove articles/punctuation."""
         text = text.lower().strip()
@@ -2173,9 +2320,7 @@ def compute_f1(prediction: str, references: List[str]) -> float:
         if not pred_tokens or not ref_tokens:
             return float(pred_tokens == ref_tokens)
 
-        common = sum(
-            (min(pred_tokens.count(t), ref_tokens.count(t)) for t in set(pred_tokens))
-        )
+        common = sum((min(pred_tokens.count(t), ref_tokens.count(t)) for t in set(pred_tokens)))
         if common == 0:
             return 0.0
         precision = common / len(pred_tokens)
@@ -2208,20 +2353,22 @@ def fit_exponential_decay(
 
     if HAS_SCIPY:
         try:
+
             def model(x_data, log_eta):
                 return x_data * log_eta
+
             popt, _ = curve_fit(model, x, log_y)
             eta_est = np.exp(popt[0])
-        except Exception:
+        except (RuntimeError, ValueError):
             # Fallback to linear regression
-            slope = np.sum(x * log_y) / np.sum(x ** 2)
+            slope = np.sum(x * log_y) / np.sum(x**2)
             eta_est = np.exp(slope)
     else:
-        slope = np.sum(x * log_y) / np.sum(x ** 2)
+        slope = np.sum(x * log_y) / np.sum(x**2)
         eta_est = np.exp(slope)
 
     # R-squared
-    y_pred = eta_est ** x
+    y_pred = eta_est**x
     ss_res = np.sum((y - y_pred) ** 2)
     ss_tot = np.sum((y - np.mean(y)) ** 2)
     r_squared = 1 - ss_res / ss_tot if ss_tot > 0 else 0.0
@@ -2254,10 +2401,11 @@ def print_system_info() -> None:
 # CLI Argument Parser
 # =============================================================================
 
+
 def build_parser() -> argparse.ArgumentParser:
     """Build the argument parser."""
     parser = argparse.ArgumentParser(
-        description="Run LLM experiments for 'Information Depreciation and Optimal Depth in AI Delegation Chains'",
+        description="Run LLM experiments for 'Information Depreciation and Optimal Depth in AI Delegation Chains'",  # noqa: E501
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog="""
 Examples:
@@ -2358,6 +2506,7 @@ Examples:
 # Main entry point
 # =============================================================================
 
+
 def main():
     """Main entry point for running experiments."""
     parser = build_parser()
@@ -2431,8 +2580,8 @@ def main():
 
     except KeyboardInterrupt:
         logger.warning("\nInterrupted by user. Saving partial results...")
-    except Exception as e:
-        logger.error(f"\nExperiment failed: {e}", exc_info=True)
+    except (RuntimeError, OSError, ValueError) as e:
+        logger.error("\nExperiment failed: %s", e, exc_info=True)
         raise
     finally:
         # Unload model to free memory
@@ -2451,23 +2600,23 @@ def main():
     if exp1_results:
         latex = analyzer.latex_table_depth_accuracy(exp1_results)
         path = Path(args.output_dir) / "table_depth_accuracy.tex"
-        with open(path, "w") as f:
+        with open(path, "w", encoding="utf-8") as f:
             f.write(latex)
-        logger.info(f"Depth-accuracy LaTeX table saved to {path}")
+        logger.info("Depth-accuracy LaTeX table saved to path")
 
     if exp2_results:
         latex = analyzer.latex_table_front_loading(exp2_results)
         path = Path(args.output_dir) / "table_front_loading.tex"
-        with open(path, "w") as f:
+        with open(path, "w", encoding="utf-8") as f:
             f.write(latex)
-        logger.info(f"Front-loading LaTeX table saved to {path}")
+        logger.info("Front-loading LaTeX table saved to path")
 
     if exp3_estimates:
         latex = analyzer.latex_table_eta(exp3_estimates)
         path = Path(args.output_dir) / "table_eta.tex"
-        with open(path, "w") as f:
+        with open(path, "w", encoding="utf-8") as f:
             f.write(latex)
-        logger.info(f"Eta estimation LaTeX table saved to {path}")
+        logger.info("Eta estimation LaTeX table saved to path")
 
     # Summary report
     if any([exp1_results, exp2_results, exp3_estimates]):
@@ -2475,7 +2624,7 @@ def main():
             exp1_results, exp2_results, exp3_estimates, eta_fitted, r_squared
         )
         summary_path = Path(args.output_dir) / "summary.txt"
-        with open(summary_path, "w") as f:
+        with open(summary_path, "w", encoding="utf-8") as f:
             f.write(summary)
         logger.info(f"\n{summary}")
         logger.info(f"\nSummary saved to {summary_path}")
@@ -2491,19 +2640,19 @@ def main():
             "seed": args.seed,
         },
         "experiment_1": [asdict(r) for r in exp1_results] if exp1_results else [],
-        "experiment_2": {
-            s: [asdict(r) for r in res] for s, res in exp2_results.items()
-        } if exp2_results else {},
+        "experiment_2": (
+            {s: [asdict(r) for r in res] for s, res in exp2_results.items()} if exp2_results else {}
+        ),
         "experiment_3": [asdict(e) for e in exp3_estimates] if exp3_estimates else [],
         "eta_fitted": eta_fitted,
         "r_squared": r_squared,
     }
     analyzer.export_json(all_results, "results.json")
 
-    logger.info("\n" + "=" * 60)
+    logger.info("\n%s", "=" * 60)
     logger.info("All experiments completed!")
-    logger.info(f"Results saved to: {args.output_dir}")
-    logger.info("=" * 60)
+    logger.info("Results saved to: %s", args.output_dir)
+    logger.info("%s", "=" * 60)
 
 
 if __name__ == "__main__":

@@ -32,13 +32,13 @@ The experiments validate seven theoretical predictions:
 
 | Component | Version / Tool | Purpose |
 |-----------|---------------|---------|
-| Python | 3.10 | Runtime environment |
-| PyTorch | 2.1.0 | Deep learning framework |
-| Transformers | 4.35.0 | Model loading and inference |
+| Python | 3.10+ | Runtime environment |
+| PyTorch | 2.7.0 | Deep learning framework |
+| Transformers | >=4.40.0 | Model loading and inference |
 | Datasets | 2.14.0 | HuggingFace dataset loading |
-| vLLM | 0.2.1 | Accelerated LLM inference (optional) |
-| bitsandbytes | 0.41.0 | 4-bit / 8-bit quantization |
-| accelerate | 0.24.0 | Multi-GPU support |
+| vLLM | >=0.11.0 | Accelerated LLM inference (optional) |
+| bitsandbytes | >=0.43.0 | 4-bit / 8-bit quantization |
+| accelerate | >=0.24.0 | Multi-GPU support |
 | NumPy / SciPy / pandas | latest compatible | Data processing and statistics |
 | statsmodels | latest compatible | OLS regression analysis |
 | matplotlib | latest compatible | Visualization |
@@ -64,10 +64,11 @@ The experiments validate seven theoretical predictions:
 │   ├── sec_experiments.tex         # Experimental validation
 │   └── ...                         # Other sections
 ├── experiments/                    # Python experiment code
-│   ├── exp_framework.py            # Baseline simulation (3 experiments)
-│   ├── exp_advanced.py             # Advanced simulation (4 experiments)
+│   ├── exp_framework.py            # Baseline simulation engine (3 experiments)
+│   ├── run.py                      # Unified experiment runner (registry-based)
 │   ├── run_real_experiments.py     # Production real-LLM runner (~2400 lines)
-│   ├── visualize_results.py        # Figure generation
+│   ├── exps/                       # Modular experiment definitions (19 experiments)
+│   ├── registry.py                 # Experiment registry
 │   ├── requirements.txt            # Python dependencies
 │   ├── setup_env.sh                # AutoDL one-click environment setup
 │   └── README.md                   # Experiment guide (Chinese)
@@ -97,14 +98,14 @@ pdflatex main.tex
 
 ```bash
 cd experiments
-python exp_framework.py    # Baseline experiments 1-3
-python exp_advanced.py     # Advanced experiments 4-7
-python visualize_results.py  # Generate figures
+python exp_framework.py          # Baseline experiments 1-3
+python run.py --experiment all   # All registered simulation experiments
+python run.py --category baseline # Baseline category only
 ```
 
 Outputs:
 - `results/results.json` — structured JSON with all metrics
-- `results/advanced_results.json` — advanced experiment results
+- `results/unified_results_*.json` — unified runner output
 - `results/*.tex` — LaTeX tables ready for inclusion in paper
 - `figures/*.png` — publication-quality figures
 
@@ -148,12 +149,21 @@ python simulation_regression.py
   - `run_experiment_2_front_loading()`: Compare strategies at L = 3
   - `run_experiment_3_eta_estimation()`: Estimate per-layer retention rate
 
-### `experiments/exp_advanced.py` — Advanced Experiments
+### `experiments/exps/` — Modular Experiment Definitions
 
-- **`run_experiment_4_signal_overload()`**: Fixed budget, varying K
-- **`run_experiment_5_heterogeneity()`**: Homogeneous vs heterogeneous signals
-- **`run_experiment_6_cost_irrelevance()`: Vary κ, compute optimal depth
-- **`run_experiment_7_budget_depth()`: Vary A, compute optimal depth
+- **Baseline**: `exp01_depth_accuracy`, `exp02_front_loading`, `exp03_exponential_decay`
+- **Advanced**: `exp04_signal_overload`, `exp05_heterogeneity`, `exp06_cost_irrelevance`, `exp07_budget_depth`
+- **Reviewer Response**: `exp08`–`exp12`
+- **V6 Architecture**: `exp15`–`exp17`
+- **V6 Front-Loading**: `exp18`–`exp19`
+- **V6 Microfoundation**: `exp13`–`exp14`
+- **Supplementary Figures**: `sup01`–`sup07`
+
+### `experiments/run.py` — Unified Experiment Runner
+
+- **Registry-based dispatch**: Discovers and executes all experiments registered via `@register` decorator
+- **Category filtering**: Run subsets (`baseline`, `advanced`, `reviewer`, `supplementary`, `v6_*`)
+- **Result export**: Saves JSON results and LaTeX stubs with per-experiment status and metadata
 
 ### `experiments/run_real_experiments.py` — Production Runner
 
@@ -162,9 +172,11 @@ python simulation_regression.py
 - **`LLMChain`**: Multi-layer inference with output-to-input passing
 - **`ExperimentRunner`**: Checkpoint/resume, result export (JSON/CSV/LaTeX)
 
-### `experiments/visualize_results.py` — Figure Generation
+### `simulation_regression.py` — Regression Analysis
 
-Generates publication-quality PNG figures for all 7 experiments using matplotlib.
+- Generates simulated datasets for Needle-in-Haystack, Depth-Accuracy, and Signal-Overload scenarios
+- Runs OLS regressions with robust standard errors (`HC1`)
+- Exports formatted LaTeX regression tables to `regression_tables.tex`
 
 ---
 
@@ -173,11 +185,14 @@ Generates publication-quality PNG figures for all 7 experiments using matplotlib
 ### Model Registry (`run_real_experiments.py`)
 
 Supported model sizes:
-- `"7b"` → `meta-llama/Llama-2-7b-chat-hf`
+- `"7b"` → `unsloth/llama-2-7b-chat` (public mirror, no Meta gate)
+- `"falcon7b"` → `tiiuae/falcon-7b-instruct` (fully public)
+- `"mistral7b"` → `mistralai/Mistral-7B-Instruct-v0.3` (public, fast)
 - `"13b"` → `meta-llama/Llama-2-13b-chat-hf`
-- `"8b-instruct"` → `meta-llama/Llama-3.1-8B-Instruct` (recommended, 128K context)
+- `"llama3_8b"` → `meta-llama/Llama-3.1-8B-Instruct` (recommended, 128K context)
 - `"70b"` → `meta-llama/Llama-2-70b-chat-hf`
 - `"tiny"` → `TinyLlama/TinyLlama-1.1B-Chat-v1.0`
+- `"qwen7b"` → `Qwen/Qwen2.5-7B-Instruct` (public, no HF gate)
 - `"phi2"` → `microsoft/phi-2`
 
 ### Simulation Parameters (`exp_framework.py`)
@@ -210,7 +225,7 @@ Supported model sizes:
 ### Logging
 
 - `run_real_experiments.py` uses `logging.basicConfig` with INFO level
-- `exp_framework.py` and `exp_advanced.py` use `print()` for simulation output
+- `exp_framework.py` and `exps/*` modules use `print()` for simulation output
 
 ### Data Output
 
@@ -223,7 +238,7 @@ Supported model sizes:
 
 There is **no formal test suite**. Testing is done through:
 
-1. **Simulation mode**: Run `exp_framework.py` and `exp_advanced.py` to verify structural predictions
+1. **Simulation mode**: Run `exp_framework.py` or `run.py --experiment all` to verify structural predictions
 2. **Mock data mode**: `DatasetLoader` falls back to mock data if HF is unreachable
 3. **Tiny model smoke test**: Run with `--model_size tiny` for fast real-inference check
 4. **Manual verification**: Check generated JSON and figures for expected patterns
@@ -237,7 +252,18 @@ There is **no formal test suite**. Testing is done through:
 1. Create instance with PyTorch 2.x + CUDA 11.8/12.1 image
 2. Run `bash setup_env.sh`
 3. Activate environment: `conda activate info_depreciation`
-4. Run experiments: `cd /root/autodl-tmp/experiments && python run_real_experiments.py --experiment all`
+
+**Simulation mode (no GPU required):**
+```bash
+cd /root/autodl-tmp/experiments
+python run.py --experiment all
+```
+
+**Real LLM inference mode:**
+```bash
+cd /root/autodl-tmp/experiments
+python run_real_experiments.py --experiment all --model_size 7b
+```
 
 ### Environment Variables for China Deployment
 
@@ -255,4 +281,4 @@ These are automatically set by `setup_env.sh`.
 - **Bilingual documentation**: Paper and code comments are in English; deployment guides (`README.md`, `autodl_guide.md`, `setup_env.sh` comments) are in Chinese. Maintain existing language of each file.
 - **No package manager config**: Dependencies managed via `requirements.txt` and `setup_env.sh`.
 - **LaTeX integration**: Experiment scripts generate `.tex` table files. These are manually copied into `paper/sec_experiments.tex` or included via `\input`. No automated build pipeline links experiments to the paper.
-- **Large file caution**: Downloading models (e.g., Llama-2-70B) requires tens of GB of disk space. Use `--quantization 4bit` and model sizes `7b`, `8b-instruct`, or `tiny` unless you have multiple A100s.
+- **Large file caution**: Downloading models (e.g., Llama-2-70B) requires tens of GB of disk space. Use `--quantization 4bit` and model sizes `7b`, `llama3_8b`, or `tiny` unless you have multiple A100s.

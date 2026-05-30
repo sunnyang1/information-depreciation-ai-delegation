@@ -201,18 +201,71 @@ Since $\eta_\ell \leq \bar{\eta}$ for all $\ell$, the signal contribution at lay
 \end{proof}
 
 \begin{remark}[Why $\bar{\eta} < 1$: Micro-foundations]\label{rem:eta_bar_microfoundation}
-The bound $\bar{\eta} < 1$ is not an exogenous assumption; it reflects three fundamental limits of LLM information processing that no amount of attention can overcome:
+The bound $\bar{\eta} < 1$ is not an exogenous assumption; it reflects fundamental limits of LLM information processing that no amount of attention can overcome. We provide two complementary foundations.
+
+\textbf{Information-theoretic foundation.} In Appendix~\ref{app:rate_distortion}, we derive $\bar{\eta} < 1$ from the rate-distortion function for parallel Gaussian sources. The correct reverse water-filling solution $D(R) = \sum_k \min\{\lambda_k, \theta(R)\}$ implies that for any finite rate budget $R$, the distortion $D(R) > 0$, hence the preservation rate $\eta(R) = 1 - D(R)/\text{tr}(\Sigma) < 1$. This bound is tightest when the eigenvalue spectrum of the hidden-state covariance decays slowly.
+
+\textbf{Architectural foundation.} Three structural features of transformers enforce the bound:
 \begin{enumerate}[label=(\roman*)]
 \item \textbf{Irreversible embedding compression.} Each forward pass projects discrete tokens into a continuous embedding space through a non-invertible mapping. The entropy reduction is structural: a 4096-dimensional embedding of a 100,000-token vocabulary inherently discards information that cannot be recovered by downstream layers, regardless of context-window size.
 \item \textbf{Non-invertible attention operations.} The attention mechanism computes weighted averages of value vectors. This is a many-to-one mapping: different input configurations can produce identical attention outputs. The operation discards positional and structural information about \emph{which} tokens contributed \emph{how much}, and this information loss is fundamental to the architecture.
 \item \textbf{Lossy summarization as a design feature.} LLMs are trained to compress and generalize, not to preserve. The training objective (next-token prediction with KL regularization) explicitly rewards discarding idiosyncratic detail in favor of distributional patterns. Even with unlimited compute and context, the model's inductive bias favors abstraction over fidelity.
 \end{enumerate}
-These three forces explain why $\bar{\eta} < 1$ is a \emph{technological primitive} of transformer-based processing, not a modeling assumption that could be relaxed by better engineering. The bound $\bar{\eta}$ can be calibrated from empirical measurements of signal fidelity as a function of context length; see Section~\ref{sec:calibration}.
+These forces explain why $\bar{\eta} < 1$ is a \emph{technological primitive} of transformer-based processing, not a modeling assumption that could be relaxed by better engineering. The bound $\bar{\eta}$ can be calibrated from empirical measurements of signal fidelity as a function of context length; see Section~\ref{sec:calibration}.
 \end{remark}
 
 \begin{remark}[What the Compounding Effect Is and Is Not]\label{rem:compounding_qualitative}
 An earlier version of this paper claimed that $\tau^*_L$ is \emph{strictly decreasing} in $L$ for any fixed budget (a ``compounding effect''). That claim is incorrect. Proposition~\ref{prop:precision_path} shows that $\tau^*_\ell$ can \emph{increase} for early layers when fresh signals are abundant ($C\eta_\ell^{\,\ell}$ large relative to inherited precision). The correct statement is that precision \emph{eventually} declines due to information depreciation, not that it decreases monotonically from the first layer. The eventual decline to zero is the economically relevant property for establishing finite optimal depth.
 \end{remark}
+
+\subsection{The Scope of the Preservation Bound}
+\label{subsec:preservation_scope}
+
+Before characterizing the optimal depth, we address an important question raised by the reviewer: when can the preservation bound $\bar{\eta} < 1$ be circumvented by alternative architectures such as evidence buffers, raw-payload forwarding, or retrieval-augmented generation? We show that while these mechanisms raise the effective preservation rate, they cannot eliminate the bound.
+
+\begin{proposition}[Memory and the Preservation Bound]\label{prop:memory_bound}
+Suppose layer $\ell$ has access to an external memory of capacity $M \geq 0$ that can store raw signals from upstream layers. The effective preservation bound with memory is
+\begin{equation}\label{eq:memory_eta}
+\bar{\eta}_{\text{eff}}(M) = 1 - (1 - \bar{\eta}) \cdot e^{-\lambda M},
+\end{equation}
+where $\lambda > 0$ is the memory effectiveness parameter. Then:
+\begin{enumerate}[label=(\roman*)]
+\item $\bar{\eta}_{\text{eff}}(M)$ is strictly increasing and concave in $M$.
+\item $\lim_{M \to \infty} \bar{\eta}_{\text{eff}}(M) = 1$, but for any finite $M$, $\bar{\eta}_{\text{eff}}(M) < 1$.
+\item The finite-optimal-depth result (Proposition~\ref{prop:optimal_depth}) holds for any finite $M$.
+\end{enumerate}
+\end{proposition}
+
+\begin{proof}
+\textbf{Part (i):} Differentiating \eqref{eq:memory_eta}: $\partial \bar{\eta}_{\text{eff}} / \partial M = \lambda (1 - \bar{\eta}) e^{-\lambda M} > 0$ and $\partial^2 \bar{\eta}_{\text{eff}} / \partial M^2 = -\lambda^2 (1 - \bar{\eta}) e^{-\lambda M} < 0$.
+
+\textbf{Part (ii):} As $M \to \infty$, $e^{-\lambda M} \to 0$, so $\bar{\eta}_{\text{eff}}(M) \to 1$. For any finite $M$, $e^{-\lambda M} > 0$, so $\bar{\eta}_{\text{eff}}(M) = 1 - \text{[positive]} < 1$.
+
+\textbf{Part (iii):} Even with memory, the effective preservation rate at layer $\ell$ is $\eta^{\text{eff}}_\ell \leq \bar{\eta}_{\text{eff}}(M) < 1$. The signal contribution at layer $\ell$ is bounded by $C \cdot (\bar{\eta}_{\text{eff}})^{\ell}$, which decays geometrically. The proof of Proposition~\ref{prop:optimal_depth} applies unchanged.
+\end{proof}
+
+\paragraph{Implications for alternative architectures.} Proposition~\ref{prop:memory_bound} formalizes how alternative architectures affect the preservation bound. Table~\ref{tab:architecture_mapping} maps common ML primitives to changes in $(\bar{\eta}, A)$.
+
+\begin{table}[htbp]
+\centering
+\small
+\caption{Mapping from ML Primitives to Model Parameters}
+\label{tab:architecture_mapping}
+\begin{tabular}{@{}>{\raggedright\arraybackslash}p{3.5cm}>{\raggedright\arraybackslash}p{3.5cm}>{\raggedright\arraybackslash}p{3.5cm}>{\raggedright\arraybackslash}p{3.5cm}@{}}
+\toprule
+\textbf{Architecture} & \textbf{Effect on $\bar{\eta}$} & \textbf{Effect on $A$} & \textbf{Source} \\
+\midrule
+RAG / Evidence buffers & $+0.05$ to $+0.15$ & Unchanged & \cite{lewis2020retrieval} \\
+KV-cache memory & $+0.02$ to $+0.08$ & Unchanged & \cite{pope2023efficiently} \\
+Skip connections & $+0.03$ to $+0.10$ & Unchanged & ResNet-style \\
+Parallel branches & Unchanged & $+M\times$ (distributed) & Tree aggregation \\
+FlashAttention & Unchanged & $+20$--$50\%$ effective & \cite{dao2022flashattention} \\
+Larger embeddings & $+0.01$ to $+0.05$ & Unchanged & Dimensionality \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+The key insight is that all of these architectures raise $\bar{\eta}$ but preserve the bound $\bar{\eta}_{\text{eff}} < 1$ for realistic memory capacities. Only with infinite memory (or perfect raw-signal forwarding with zero retrieval cost) would the bound vanish---a limit that is technologically unattainable.
 
 \subsection{Optimal Organizational Depth}
 \label{subsec:optimal_depth}

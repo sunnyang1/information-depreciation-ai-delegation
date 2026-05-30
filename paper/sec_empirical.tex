@@ -193,4 +193,49 @@ The predictions and parameterization protocol in this section are intended as a 
 
 \paragraph{Direction 3: Laboratory experiments with controlled depth assignment.} The cleanest test of Prediction \ref{pred:depth_accuracy} would be a laboratory experiment in which participants (human or AI) are randomly assigned to pipelines of varying depth $L \in \{1, 2, 3, 4\}$ for identical tasks. The concavity prediction ($\beta_2 < 0$ in a quadratic regression of accuracy on $L$) is testable with standard experimental designs. Public platforms such as SWE-bench \citep{jimenez2024swe} and OpenHands \citep{wang2024openhands} provide the infrastructure for such experiments.
 
+\subsection{Identification Strategy and Pre-Registered Regressions}
+\label{subsec:identification}
+
+We now outline a concrete identification strategy for estimating the preservation parameters and testing the model's predictions, addressing the reviewer's request for operationalized empirical designs.
+
+\paragraph{Identifying $\eta_\ell$ from API logs.} The endogenous preservation rate $\eta_\ell$ is not directly observable, but it can be identified using a two-step procedure:
+
+\textbf{Step 1: Estimate the attention-response function.} Using variation in context-window lengths across model versions, estimate:
+\begin{equation}\label{eq:first_stage_eta}
+\ln(\text{Accuracy}_{m,t}) = \alpha_m + \beta \ln(A_t) + \delta \cdot \mathbf{1}_{\text{multi\text{-}layer}} + \epsilon_{m,t},
+\end{equation}
+where $m$ indexes model and $t$ indexes context-length bin. The coefficient $\beta$ identifies the attention elasticity of precision.
+
+\textbf{Step 2: Invert the structural mapping.} From Proposition~\ref{prop:ri_to_eta}, $\eta_\ell = f(I(A_\ell) / I_{\max})$. Given an estimate of $\beta$ from Step 1, solve for the implied $\eta_\ell$ at each observed context length using equation \eqref{eq:eta_calibration}.
+
+\paragraph{IV strategy.} Context-window size $A_\ell$ is endogenous to model capabilities. We propose instrumenting $A_\ell$ with \emph{model-version release dates}:
+\begin{equation}\label{eq:iv}
+A_{i,t} = \pi_0 + \pi_1 Z_{i,t} + \mathbf{X}'_{i,t}\boldsymbol{\pi}_2 + u_{i,t},
+\end{equation}
+where $Z_{i,t}$ is the quarter since the model family's first release. Release dates are plausibly exogenous to a given firm's pipeline design because they are determined by the model provider's R\&D schedule, not by the firm's task requirements. The relevance condition holds because newer models have larger context windows. The exclusion restriction holds if release dates affect output accuracy only through context-window size, not through unobserved quality improvements correlated with depth choices.
+
+\paragraph{Difference-in-differences design.} Context-window expansions (e.g., GPT-4's upgrade from 8K to 128K tokens) provide plausibly exogenous variation. The specification is:
+\begin{equation}\label{eq:did}
+L^*_{i,t} = \alpha_i + \lambda_t + \tau \cdot (\text{Treat}_i \times \text{Post}_t) + \mathbf{X}'_{i,t}\boldsymbol{\beta} + \varepsilon_{i,t},
+\end{equation}
+where $i$ indexes the pipeline, $t$ indexes time, $\alpha_i$ are pipeline fixed effects, $\lambda_t$ are time fixed effects, $\text{Treat}_i = 1$ if pipeline $i$ uses the expanding model, and $\text{Post}_t = 1$ after the expansion date. Prediction~\ref{pred:budget_depth} implies $\tau > 0$: pipelines using the expanded model should increase depth relative to control pipelines.
+
+\paragraph{Minimal dataset requirements.} Table~\ref{tab:minimal_dataset} summarizes the data needed for each design.
+
+\begin{table}[htbp]
+\centering
+\small
+\caption{Minimal Dataset Requirements by Identification Strategy}
+\label{tab:minimal_dataset}
+\begin{tabular}{@{}>{\raggedright\arraybackslash}p{3.5cm}>{\raggedright\arraybackslash}p{4cm}>{\raggedright\arraybackslash}p{4cm}@{}}
+\toprule
+\textbf{Design} & \textbf{Required Data} & \textbf{Sample Size} \\
+\midrule
+IV (release dates) & Pipeline configs, model versions, accuracy & $N \geq 200$ pipelines \\
+Diff-in-diff & Panel of pipeline depths, expansion dates & $N \geq 100$ $\times$ 8 periods \\
+Lab experiment & Randomized depth assignment, task accuracy & $N \geq 40$ per group \\
+\bottomrule
+\end{tabular}
+\end{table}
+
 \paragraph{A note on data availability.} We have not conducted any of the empirical analyses described above. All illustrative parameters in Table \ref{tab:calibrated_params} are derived from \emph{publicly available, previously published} benchmark results. The sensitivity analysis in Table \ref{tab:sensitivity} is a purely theoretical exercise: we compute comparative-statics predictions from the model at each parameter grid point. Future empirical work should estimate these parameters using the identification strategies described in this section and test the model's predictions against experimental or quas

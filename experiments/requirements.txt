@@ -1,22 +1,29 @@
 # LLM实验环境依赖
 # 安装方式: pip install -r requirements.txt
 # 或直接使用: bash setup_env.sh 一键配置
+#
+# 适配环境: RTX 5090 (Blackwell) + PyTorch 2.7.0 + CUDA 12.8 + Python 3.12
+# 向后兼容: CUDA 11.8/12.1, PyTorch 2.1.0, Python 3.10
 
 # ========== 核心框架 ==========
-torch==2.1.0
-torchvision==0.16.0
-torchaudio==2.1.0
-transformers==4.35.0
-# tokenizers 必须与 transformers 4.35 兼容（严格 <0.15）
-tokenizers>=0.14.0,<0.15.0
+# 如使用预装镜像 (PyTorch 2.7.0 + CUDA 12.8)，以下torch行可跳过
+torch==2.7.0
+torchvision==0.22.0
+torchaudio==2.7.0
+
+# transformers: 4.40+ 适配 Blackwell / PyTorch 2.7
+transformers>=4.40.0
+# tokenizers 随 transformers 自动解析，不再强制版本
 # pyarrow 必须限制在 <14，否则 datasets==2.14.0 会报 PyExtensionType 错误
 pyarrow>=12.0.0,<14.0.0
 datasets==2.14.0
-accelerate==0.24.0
+accelerate>=0.24.0
 
 # ========== 量化与优化 ==========
-bitsandbytes==0.41.0
-vllm==0.2.1
+# bitsandbytes: Blackwell 需要 >=0.43
+bitsandbytes>=0.43.0
+# vLLM: Blackwell 需要 >=0.11; 旧架构可用 0.2.1
+vllm>=0.11.0
 
 # ========== 数据处理 ==========
 scipy
@@ -34,4 +41,4 @@ statsmodels
 # sentencepiece        # 部分模型需要 (如 LLaMA)
 # protobuf             # 部分模型需要
 # einops               # 部分模型架构需要
-# flash-attn           # 注意力机制加速 (需CUDA编译)
+# flash-attn           # 注意力机制加速 (需CUDA编译, Blackwell需最新版)

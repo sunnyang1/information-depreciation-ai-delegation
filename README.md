@@ -23,13 +23,13 @@ The experiments validate seven theoretical predictions:
 
 | # | Prediction | Paper Reference | Experiment |
 |---|-----------|-----------------|------------|
-| 1 | Depth-Accuracy Tradeoff (concave) | Prediction 7.1 | `exp_framework.py` #1 |
-| 2 | Front-Loading Advantage | Proposition 4 | `exp_framework.py` #2 |
-| 3 | Exponential Decay of Retention | Proposition 5 | `exp_framework.py` #3 |
-| 4 | Signal Overload | Prediction 7.2 | `exp_advanced.py` #4 |
-| 5 | Heterogeneity Reduces Distortion | Prediction 7.3 | `exp_advanced.py` #5 |
-| 6 | Cost Irrelevance for Depth | Prediction 7.4 | `exp_advanced.py` #6 |
-| 7 | Budget Expansion Increases Depth | Prediction 7.5 | `exp_advanced.py` #7 |
+| 1 | Depth-Accuracy Tradeoff (concave) | Prediction 7.1 | `exp01` |
+| 2 | Front-Loading Advantage | Proposition 4 | `exp02` |
+| 3 | Exponential Decay of Retention | Proposition 5 | `exp03` |
+| 4 | Signal Overload | Prediction 7.2 | `exp04` |
+| 5 | Heterogeneity Reduces Distortion | Prediction 7.3 | `exp05` |
+| 6 | Cost Irrelevance for Depth | Prediction 7.4 | `exp06` |
+| 7 | Budget Expansion Increases Depth | Prediction 7.5 | `exp07` |
 
 ---
 
@@ -48,15 +48,17 @@ The experiments validate seven theoretical predictions:
 │   ├── sec_experiments.tex         # Experimental validation
 │   └── ...                         # Other sections
 ├── experiments/                    # Python experiment code
-│   ├── exp_framework.py            # Baseline simulation (3 experiments)
-│   ├── exp_advanced.py             # Advanced simulation (4 experiments)
-│   ├── run_real_experiments.py     # Real LLM inference runner
-│   ├── visualize_results.py        # Figure generation
+│   ├── exp_framework.py            # Core simulation engine (3 baseline experiments)
+│   ├── run.py                      # Unified runner for all registered experiments
+│   ├── registry.py                 # Experiment registry
+│   ├── exps/                       # 19 modular experiment definitions
+│   ├── run_real_experiments.py     # Production real-LLM inference runner
 │   ├── requirements.txt            # Python dependencies
-│   ├── setup_env.sh                # AutoDL one-click setup
+│   ├── setup_env.sh                # AutoDL one-click environment setup
 │   └── README.md                   # Experiment guide (Chinese)
-├── simulation_regression.py        # Simulated regression analysis
-├── EXPERIMENTS.md                  # Detailed experiment design
+├── simulation_regression.py        # Simulated regression analysis + LaTeX tables
+├── EXPERIMENTS.md                  # Detailed experiment design document
+├── AGENTS.md                       # Agent-facing development guide
 └── README.md                       # This file
 ```
 
@@ -66,16 +68,39 @@ The experiments validate seven theoretical predictions:
 
 ### Simulation Mode (No GPU Required)
 
-Run all baseline experiments in simulation:
+Run all baseline experiments directly:
 
 ```bash
 cd experiments
 python exp_framework.py
-python exp_advanced.py
-python visualize_results.py
+```
+
+Run the unified experiment runner (all 26 registered experiments):
+
+```bash
+cd experiments
+python run.py --experiment all
+
+# Or run by category
+python run.py --category baseline
+python run.py --category advanced
+python run.py --category reviewer
+python run.py --category supplementary
+
+# List all experiments
+python run.py --list
 ```
 
 Results are saved to `experiments/results/` (JSON + LaTeX tables).
+
+### Regression Analysis
+
+Generate simulated data, run OLS regressions, and export LaTeX tables:
+
+```bash
+python simulation_regression.py
+# Output: regression_tables.tex
+```
 
 ### Real LLM Inference Mode
 
@@ -89,6 +114,9 @@ python run_real_experiments.py --experiment all --model_size 7b
 
 # 4-bit quantization for limited VRAM
 python run_real_experiments.py --experiment all --model_size 13b --quantization 4bit
+
+# Use Llama-3.1-8B with 128K context (recommended)
+python run_real_experiments.py --experiment all --model_size llama3_8b
 ```
 
 ### LaTeX Paper
@@ -117,6 +145,21 @@ See `paper/sec_calibration.tex` for full calibration details.
 
 ---
 
+## Supported Models
+
+| Key | Model | Context | Best For |
+|-----|-------|---------|----------|
+| `7b` | unsloth/llama-2-7b-chat | 4K | Fast testing |
+| `llama3_8b` | meta-llama/Llama-3.1-8B-Instruct | 128K | **Recommended** |
+| `mistral7b` | mistralai/Mistral-7B-Instruct-v0.3 | 32K | Public, fast |
+| `qwen7b` | Qwen/Qwen2.5-7B-Instruct | 32K | Public, no gate |
+| `13b` | meta-llama/Llama-2-13b-chat-hf | 4K | Medium quality |
+| `70b` | meta-llama/Llama-2-70b-chat-hf | 4K | High quality (multi-GPU) |
+| `tiny` | TinyLlama/TinyLlama-1.1B-Chat-v1.0 | 2K | Smoke test |
+| `phi2` | microsoft/phi-2 | 2K | Small, good quality |
+
+---
+
 ## Citation
 
 If you use this code or build on our framework, please cite:
@@ -135,3 +178,4 @@ If you use this code or build on our framework, please cite:
 ## License
 
 MIT License. See [LICENSE](LICENSE) for details.
+# test

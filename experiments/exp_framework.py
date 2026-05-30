@@ -26,14 +26,13 @@ from __future__ import annotations
 import json
 import random
 import math
-import os
 from dataclasses import dataclass, asdict, field
-from typing import List, Dict, Tuple, Optional
+from typing import List, Dict, Tuple, Optional, Sequence
 from enum import Enum
 from pathlib import Path
 
 import numpy as np
-from scipy import optimize, stats
+from scipy import optimize
 
 # ============================================================================
 # Global random seed
@@ -47,26 +46,26 @@ np.random.seed(SEED)
 # ============================================================================
 
 # Preservation parameters (Assumption 2)
-ETA_UNDERLINE = 0.75      # min preservation rate (no attention)
-ETA_BAR = 0.95            # max preservation rate (unlimited attention)
-A_SAT = 2.0               # saturation parameter in eta(A)
+ETA_UNDERLINE = 0.75  # min preservation rate (no attention)
+ETA_BAR = 0.95  # max preservation rate (unlimited attention)
+A_SAT = 2.0  # saturation parameter in eta(A)
 
 # Attention technology (Assumption 3)
-GAMMA = 0.35              # attention elasticity of precision
+GAMMA = 0.35  # attention elasticity of precision
 
 # Cost parameters (Assumption 4)
-KAPPA = 1e-5              # linear cost coefficient (calibrated to match value scale)
-PHI = 1e-10               # quadratic cost coefficient
+KAPPA = 1e-5  # linear cost coefficient (calibrated to match value scale)
+PHI = 1e-10  # quadratic cost coefficient
 
 # Measurement noise
-NOISE_STD = 0.02          # std dev of accuracy measurement noise
+NOISE_STD = 0.02  # std dev of accuracy measurement noise
 
 # Value function parameter (Eq. 10)
-PSI = 1.0                 # marginal value of precision
+PSI = 1.0  # marginal value of precision
 
 # Default signal structure
-DEFAULT_K = 100           # number of signals per layer (paper: 50--100)
-DEFAULT_TAU0 = 1.0        # base raw precision of each signal
+DEFAULT_K = 100  # number of signals per layer (paper: 50--100)
+DEFAULT_TAU0 = 1.0  # base raw precision of each signal
 
 # Attention budget scaling: total_budget (tokens) -> effective attention units
 TOKENS_PER_ATTENTION_UNIT = 1000.0
@@ -80,6 +79,7 @@ DEFAULT_N_TRIALS = 100
 # ============================================================================
 # Data structures
 # ============================================================================
+
 
 class BudgetStrategy(Enum):
     UNIFORM = "uniform"
@@ -114,6 +114,7 @@ class DepreciationEstimate:
 @dataclass
 class LayerPrecisionState:
     """Precision state at a single layer."""
+
     layer_idx: int
     budget: float
     n_signals: int
@@ -129,6 +130,7 @@ class LayerPrecisionState:
 # ============================================================================
 # Theory-faithful simulation engine
 # ============================================================================
+
 
 class TheoreticalLLMChain:
     """
@@ -151,13 +153,15 @@ class TheoreticalLLMChain:
         psi: float = PSI,
         noise_std: float = NOISE_STD,
     ):
+        if not 0 < gamma < 1:
+            raise ValueError(f"gamma must be in (0, 1), got {gamma}")
         self.eta_underline = eta_underline
         self.eta_bar = eta_bar
         self.a_sat = a_sat
         self.gamma = gamma
         self.psi = psi
         self.noise_std = noise_std
-        self.rng = np.random.RandomState(SEED)
+        self.rng = np.random.default_rng(SEED)
 
     # ------------------------------------------------------------------
     # Core structural functions
@@ -178,7 +182,9 @@ class TheoreticalLLMChain:
 
     def g_attention(self, alpha: float) -> float:
         """Attention technology g(alpha) with saturation at 1 (Assumption 3)."""
-        return min(alpha ** self.gamma, 1.0)
+        if alpha < 0:
+            return 0.0
+        return min(alpha**self.gamma, 1.0)
 
     def solve_attention_allocation(
         self,
@@ -250,10 +256,18 @@ class TheoreticalLLMChain:
 
             rem_prec = sorted_prec[n_corner:]
 
-            def budget_error(log_lambda: float) -> float:
+            def budget_error(log_lambda: float, _rp=rem_prec, _rb=remaining_budget) -> float:
                 lam = math.exp(log_lambda)
-                raw = (gamma * rem_prec / lam) ** (1.0 / (1.0 - gamma))
-                return float(np.sum(raw) - remaining_budget)
+                # Use log-space computation for numerical stability when gamma is near 1
+                exponent = 1.0 / (1.0 - gamma)
+                base = gamma * _rp / lam
+                with np.errstate(over="ignore", under="ignore"):
+                    log_raw = np.log(base) * exponent
+                    raw = np.exp(log_raw)
+                # If any element overflowed, the sum definitely exceeds budget
+                if not np.all(np.isfinite(raw)):
+                    return 1e300
+                return float(np.sum(raw) - _rb)
 
             try:
                 sol = optimize.brentq(budget_error, -20.0, 20.0)
@@ -261,7 +275,13 @@ class TheoreticalLLMChain:
                 continue
 
             lam_star = math.exp(sol)
-            raw = (gamma * rem_prec / lam_star) ** (1.0 / (1.0 - gamma))
+            exponent = 1.0 / (1.0 - gamma)
+            base = gamma * rem_prec / lam_star
+            with np.errstate(over="ignore", under="ignore"):
+                raw = np.exp(np.log(base) * exponent)
+            # If overflow occurred, interior solution is invalid (alpha >= 1)
+            if not np.all(np.isfinite(raw)):
+                continue
 
             # Check if all interior alphas are < 1
             if np.any(raw >= 1.0):
@@ -292,22 +312,26 @@ class TheoreticalLLMChain:
         self,
         budget: float,
         signal_precisions: List[float],
+        tau_prior: float = 0.0,
     ) -> float:
         """
         Endogenous transmission factor (Definition 3, Eq. 16).
 
         rho = tau*_achieved / tau*_first_best
-        where tau*_first_best = sum_k tau0_k  (if all signals fully processed)
+
+        When tau_prior=0 (single-layer call), tau*_first_best = sum_k tau0_k.
+        When tau_prior>0 (multi-layer context), tau*_first_best includes prior.
         """
-        _, _, tau_star = self.solve_attention_allocation(budget, signal_precisions)
-        tau_fb = sum(signal_precisions)
+        _, _, tau_fresh = self.solve_attention_allocation(budget, signal_precisions)
+        tau_star = tau_prior + tau_fresh
+        tau_fb = tau_prior + sum(signal_precisions)
         if tau_fb <= 0:
             return 1.0
         return float(np.clip(tau_star / tau_fb, 0.0, 1.0))
 
     def precision_path(
         self,
-        budgets: List[float],
+        budgets: Sequence[float],
         n_signals_per_layer: List[int],
         base_precision: float = DEFAULT_TAU0,
         heterogeneity: Optional[List[float]] = None,
@@ -325,7 +349,7 @@ class TheoreticalLLMChain:
         """
         L = len(budgets)
         states: List[LayerPrecisionState] = []
-        tau_prior = float(n_signals_per_layer[0] * base_precision) if n_signals_per_layer else 0.0
+        tau_prior = 0.0  # Layer 0 has no upstream prior (Eq. 22 starts at l=0 with tau_prior=0)
 
         for l in range(L):
             K = n_signals_per_layer[l]
@@ -333,9 +357,18 @@ class TheoreticalLLMChain:
 
             # Signal precisions at this layer (depreciated by eta^l)
             eta_l = self.compute_eta(A, K)
-            depreciation_factor = eta_l ** l
-            if heterogeneity is not None and len(heterogeneity) == K:
-                tau0_list = [base_precision * h * depreciation_factor for h in heterogeneity]
+            depreciation_factor = eta_l**l
+            if heterogeneity is not None:
+                if len(heterogeneity) == K:
+                    tau0_list = [base_precision * h * depreciation_factor for h in heterogeneity]
+                else:
+                    import warnings
+                    warnings.warn(
+                        f"heterogeneity length ({len(heterogeneity)}) != n_signals ({K}), "
+                        "falling back to uniform precision.",
+                        UserWarning,
+                    )
+                    tau0_list = [base_precision * depreciation_factor] * K
             else:
                 tau0_list = [base_precision * depreciation_factor] * K
 
@@ -372,22 +405,34 @@ class TheoreticalLLMChain:
 
         return states
 
-    def accuracy_from_precision(self, tau: float, task_difficulty: float = 0.3) -> float:
+    def accuracy_from_precision(
+        self,
+        tau: float,
+        task_difficulty: float = 0.3,
+        add_noise: bool = True,
+    ) -> float:
         """
         Map precision to observable accuracy.
 
         We use a sigmoid mapping so that accuracy is bounded in [0,1]:
             accuracy = 1 / (1 + exp(-beta * (tau - tau0))) * (1 - difficulty)
-        with noise added.  This is a reduced-form measurement equation.
+        with optional noise added.  This is a reduced-form measurement equation.
+
+        Args:
+            tau: posterior precision
+            task_difficulty: difficulty parameter (0 = easy, 1 = impossible)
+            add_noise: whether to add Gaussian measurement noise
         """
-        # Calibrated so that tau in [50, 300] maps to accuracy in [0.4, 0.8]
+        # Calibrated so that tau in [50, 300] maps to raw_acc in [0.18, 0.91];
+        # after difficulty adjustment (1 - 0.3) the range is approximately [0.13, 0.64]
         beta = 0.015
         tau0 = 150.0
         raw_acc = 1.0 / (1.0 + math.exp(-beta * (tau - tau0)))
         # Adjust for task difficulty
         acc = raw_acc * (1.0 - task_difficulty)
         # Add measurement noise
-        acc += self.rng.normal(0.0, self.noise_std)
+        if add_noise:
+            acc += self.rng.normal(0.0, self.noise_std)
         return float(np.clip(acc, 0.0, 1.0))
 
     def run_chain(
@@ -446,6 +491,7 @@ class TheoreticalLLMChain:
 # Budget allocation helpers
 # ============================================================================
 
+
 def allocate_budget(
     total_budget: int,
     depth: int,
@@ -481,7 +527,7 @@ def allocate_budget(
 
     elif strategy == BudgetStrategy.GEOMETRIC_FRONT:
         # Halving each layer: A, A/2, A/4, ...
-        weights = np.array([1.0 / (2 ** i) for i in range(depth)])
+        weights = np.array([1.0 / (2**i) for i in range(depth)])
         weights = weights / weights.sum()
         sizes = (weights * total_budget).astype(int).tolist()
         diff = total_budget - sum(sizes)
@@ -504,6 +550,7 @@ def allocate_budget(
 # Experiment 1: Depth-Accuracy Tradeoff
 # ============================================================================
 
+
 def run_experiment_1_depth_accuracy(
     depths: Optional[List[int]] = None,
     total_budget: int = DEFAULT_TOTAL_BUDGET,
@@ -523,7 +570,7 @@ def run_experiment_1_depth_accuracy(
     print()
 
     chain = TheoreticalLLMChain()
-    results = []
+    depth_results = []
     depths = depths or list(range(1, 6))
 
     for depth in depths:
@@ -533,7 +580,7 @@ def run_experiment_1_depth_accuracy(
             total_budget=total_budget,
             n_trials=n_trials,
         )
-        results.append(result)
+        depth_results.append(result)
         print(
             f"  Depth L={depth}: Accuracy = {result.accuracy:.4f} "
             f"(±{result.metadata['accuracy_std']:.4f}), "
@@ -541,11 +588,11 @@ def run_experiment_1_depth_accuracy(
         )
 
     # Statistical test for concavity
-    accs = [r.accuracy for r in results]
+    accs = [r.accuracy for r in depth_results]
     depths_arr = np.array(depths, dtype=float)
     if len(accs) >= 3:
         # Regress accuracy on L + L^2; test if beta_2 < 0
-        X = np.column_stack((depths_arr, depths_arr ** 2, np.ones(len(depths_arr))))
+        X = np.column_stack((depths_arr, depths_arr**2, np.ones(len(depths_arr))))
         y = np.array(accs)
         beta, _, _, _ = np.linalg.lstsq(X, y, rcond=None)
         concave = beta[1] < 0
@@ -556,12 +603,13 @@ def run_experiment_1_depth_accuracy(
     monotonic = all(accs[i] >= accs[i + 1] for i in range(len(accs) - 1))
     print(f"  Monotonically decreasing: {monotonic}")
 
-    return results
+    return depth_results
 
 
 # ============================================================================
 # Experiment 2: Front-Loading Validation
 # ============================================================================
+
 
 def run_experiment_2_front_loading(
     depth: int = 3,
@@ -581,7 +629,7 @@ def run_experiment_2_front_loading(
     print()
 
     chain = TheoreticalLLMChain()
-    results: Dict[str, ExperimentResult] = {}
+    strategy_results: Dict[str, ExperimentResult] = {}
 
     for strategy in [
         BudgetStrategy.UNIFORM,
@@ -594,7 +642,7 @@ def run_experiment_2_front_loading(
             total_budget=total_budget,
             n_trials=n_trials,
         )
-        results[strategy.value] = result
+        strategy_results[strategy.value] = result
         print(
             f"  Strategy: {strategy.value:18s} | "
             f"Accuracy = {result.accuracy:.4f} (±{result.metadata['accuracy_std']:.4f}) | "
@@ -602,18 +650,18 @@ def run_experiment_2_front_loading(
         )
 
     # Ranking
-    ranking = sorted(results.items(), key=lambda x: -x[1].accuracy)
+    ranking = sorted(strategy_results.items(), key=lambda x: -x[1].accuracy)
     print(f"\n  Ranking: {' > '.join([f'{s} ({r.accuracy:.4f})' for s, r in ranking])}")
     front_loaded_best = ranking[0][0] in ("front_loaded", "geometric_front")
     print(f"  Front-loading confirmed best: {front_loaded_best}")
 
     # Pairwise t-tests (using stored std as approximation)
     print("\n  Pairwise comparisons (approximate t-tests):")
-    strategies = list(results.keys())
+    strategies = list(strategy_results.keys())
     for i in range(len(strategies)):
         for j in range(i + 1, len(strategies)):
             s1, s2 = strategies[i], strategies[j]
-            r1, r2 = results[s1], results[s2]
+            r1, r2 = strategy_results[s1], strategy_results[s2]
             # Approximate t-statistic from independent means with known std
             se = math.sqrt(
                 (r1.metadata["accuracy_std"] ** 2 + r2.metadata["accuracy_std"] ** 2) / n_trials
@@ -622,12 +670,13 @@ def run_experiment_2_front_loading(
                 t_stat = (r1.accuracy - r2.accuracy) / se
                 print(f"    {s1} vs {s2}: t = {t_stat:+.3f}")
 
-    return results
+    return strategy_results
 
 
 # ============================================================================
 # Experiment 3: Exponential Decay of Information Retention
 # ============================================================================
+
 
 def run_experiment_3_eta_estimation(
     max_depth: int = 5,
@@ -653,9 +702,6 @@ def run_experiment_3_eta_estimation(
     chain = TheoreticalLLMChain()
     estimates = []
 
-    # Baseline precision at layer 0
-    initial_precision = float(n_facts * DEFAULT_TAU0)
-
     for l in range(1, max_depth + 1):
         # Build a chain of length l with fixed budget per layer
         effective_budget = int(budget / TOKENS_PER_ATTENTION_UNIT)
@@ -674,13 +720,13 @@ def run_experiment_3_eta_estimation(
         retention = float(np.clip(retention, 0.0, 1.0))
 
         # 95% CI via binomial approximation
-        se = math.sqrt(retention * (1.0 - retention) / n_facts)
+        se = math.sqrt(retention * (1.0 - retention) / max(n_facts, 1))
         ci_lower = max(0.0, retention - 1.96 * se)
         ci_upper = min(1.0, retention + 1.96 * se)
 
         # Theoretical: use average eta
         avg_eta = float(np.mean([s.eta for s in states]))
-        theoretical = avg_eta ** l
+        theoretical = avg_eta**l
 
         estimate = DepreciationEstimate(
             layer=l,
@@ -721,6 +767,7 @@ def run_experiment_3_eta_estimation(
 # Export Results to LaTeX
 # ============================================================================
 
+
 def export_results_to_latex_tables(
     exp1_results: List[ExperimentResult],
     exp2_results: Dict[str, ExperimentResult],
@@ -745,7 +792,9 @@ def export_results_to_latex_tables(
     output.append("\\midrule")
     for r in exp1_results:
         output.append(
-            f"{r.depth} & {r.accuracy:.4f} & {r.metadata['accuracy_std']:.4f} & {r.metadata['final_tau']:.2f} \\\\"
+            f"{r.depth} & {r.accuracy:.4f} & "
+            f"{r.metadata['accuracy_std']:.4f} & "
+            f"{r.metadata['final_tau']:.2f} \\\\"
         )
     output.append("\\bottomrule")
     output.append("\\end{tabular}")
@@ -765,9 +814,12 @@ def export_results_to_latex_tables(
     ranking = sorted(exp2_results.items(), key=lambda x: -x[1].accuracy)
     rank_map = {s: i + 1 for i, (s, _) in enumerate(ranking)}
     for strategy, result in exp2_results.items():
-        budgets_str = str(result.metadata["budgets"]).replace("[", "").replace("]", "").replace(" ", "\\,")
+        budgets_str = (
+            str(result.metadata["budgets"]).replace("[", "").replace("]", "").replace(" ", "\\,")
+        )
         output.append(
-            f"{strategy.replace('_', '-')} & {result.accuracy:.4f} & ${budgets_str}$ & {rank_map[strategy]} \\\\"
+            f"{strategy.replace('_', '-')} & {result.accuracy:.4f} & "
+            f"${budgets_str}$ & {rank_map[strategy]} \\\\"
         )
     output.append("\\bottomrule")
     output.append("\\end{tabular}")
@@ -782,11 +834,15 @@ def export_results_to_latex_tables(
     output.append("\\label{tab:exp3_eta}")
     output.append("\\begin{tabular}{@{}cccc@{}}")
     output.append("\\toprule")
-    output.append("Layer $\\ell$ & Retention Rate & 95\\% CI & Theoretical $\\bar{\\eta}^\\ell$ \\\\")
+    output.append(
+        "Layer $\\ell$ & Retention Rate & 95\\% CI & Theoretical $\\bar{\\eta}^\\ell$ \\\\"
+    )
     output.append("\\midrule")
     for e in exp3_estimates:
         output.append(
-            f"{e.layer} & {e.retention_rate:.4f} & [{e.ci_lower:.4f}, {e.ci_upper:.4f}] & {e.theoretical:.4f} \\\\"
+            f"{e.layer} & {e.retention_rate:.4f} & "
+            f"[{e.ci_lower:.4f}, {e.ci_upper:.4f}] & "
+            f"{e.theoretical:.4f} \\\\"
         )
     output.append("\\bottomrule")
     output.append("\\end{tabular}")
@@ -834,11 +890,11 @@ if __name__ == "__main__":
     output_dir = Path(__file__).parent / "results"
     output_dir.mkdir(parents=True, exist_ok=True)
     output_path = output_dir / "results.json"
-    with open(output_path, "w") as f:
+    with open(output_path, "w", encoding="utf-8") as f:
         json.dump(results, f, indent=2)
 
     # Also save LaTeX
-    with open(output_dir / "tables.tex", "w") as f:
+    with open(output_dir / "tables.tex", "w", encoding="utf-8") as f:
         f.write(latex_output)
 
     print(f"\n\nResults saved to {output_path}")

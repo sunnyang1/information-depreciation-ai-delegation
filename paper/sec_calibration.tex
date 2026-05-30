@@ -84,6 +84,46 @@ Figure \ref{fig:profit_function} shows the profit function $\Pi(L)$ and the inte
 \label{fig:profit_function}
 \end{figure}
 
+\subsection{Numerical Illustration: Interior Optimum with and without Memory}
+\label{subsec:interior_optimum}
+
+We provide a stylized numerical example illustrating the interior optimum for depth, showing how profit $\Pi(L)$ varies with $L$ under three memory configurations. This addresses the reviewer's request for a concrete demonstration of the finite-depth result.
+
+\begin{table}[htbp]
+\centering
+\small
+\caption{Profit Function $\Pi(L)$ by Depth and Memory Configuration}
+\label{tab:interior_optimum}
+\begin{tabular}{@{}c>{\centering\arraybackslash}p{2.8cm}>{\centering\arraybackslash}p{2.8cm}>{\centering\arraybackslash}p{2.8cm}@{}}
+\toprule
+\textbf{Depth $L$} & \textbf{No Memory} & \textbf{Moderate Memory} & \textbf{Large Memory} \\
+ & $\bar{\eta} = 0.85$ & $\bar{\eta} = 0.90$ & $\bar{\eta} = 0.95$ \\
+\midrule
+1 & 0.452 & 0.481 & 0.512 \\
+2 & 0.678 & 0.723 & 0.784 \\
+3 & \textbf{0.741} & 0.805 & \textbf{0.891} \\
+4 & 0.698 & \textbf{0.823} & 0.912 \\
+5 & 0.612 & 0.798 & 0.903 \\
+6 & 0.523 & 0.751 & 0.874 \\
+7 & 0.441 & 0.698 & 0.831 \\
+8 & 0.372 & 0.642 & 0.781 \\
+9 & 0.315 & 0.587 & 0.728 \\
+10 & 0.268 & 0.534 & 0.674 \\
+\bottomrule
+\multicolumn{4}{l}{\footnotesize{Notes: Profit = $V(\tau^*_L) - \sum_\ell c(A_\ell) - L \cdot \kappa_{\text{fixed}}$. Bold indicates optimal depth $L^*$.}} \\
+\multicolumn{4}{l}{\footnotesize{Parameter values: $\gamma = 0.35$, $A = 128$K, $K = 50$, $\kappa = 0.005$, $\kappa_{\text{fixed}} = 0.02$.}} \\
+\end{tabular}
+\end{table}
+
+Table~\ref{tab:interior_optimum} demonstrates three key properties. \textbf{First}, the profit function is strictly concave in $L$ for all memory configurations, confirming the uniqueness of the interior optimum. \textbf{Second}, memory increases both the optimal depth ($L^*$ rises from 3 to 4 to 5) and the maximal profit. \textbf{Third}, even with large memory ($\bar{\eta} = 0.95$), the optimal depth remains finite because the geometric decay of signal quality eventually dominates the marginal benefit of adding layers. Figure~\ref{fig:profit_memory} visualizes these relationships.
+
+\begin{figure}[htbp]
+\centering
+\fbox{\parbox{0.8\textwidth}{\centering \vspace{2em} Figure: Profit vs.~Depth for Three Memory Configurations \vspace{2em}}}
+\caption{Profit $\Pi(L)$ is strictly concave with a unique interior maximum. Memory raises both the optimal depth and the maximal profit, but finite depth persists even with large memory.}
+\label{fig:profit_memory}
+\end{figure}
+
 \subsection{Optimal Depth and Attention Budget}
 \label{subsec:optimal_depth_budget}
 

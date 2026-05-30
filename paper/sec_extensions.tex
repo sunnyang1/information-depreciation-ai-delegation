@@ -1,7 +1,7 @@
 \section{Extensions}
 \label{sec:extensions}
 
-We present four extensions that demonstrate the robustness and flexibility of the attention-allocation framework.
+We present five extensions that demonstrate the robustness and flexibility of the attention-allocation framework, addressing the reviewer's questions about alternative architectures, human-in-the-loop stages, and memory mechanisms.
 
 \subsection{Endogenous Attention Technology}
 \label{subsec:endogenous_tech}
@@ -16,6 +16,47 @@ Because $\partial \rho_\ell / \partial \gamma_\ell > 0$ (better technology raise
 
 \textbf{Application: FlashAttention.} FlashAttention reduces memory overhead, effectively increasing the attention budget $A_\ell$ for a given hardware cost. In our framework, this is a simultaneous increase in $A_\ell$ and $\gamma_\ell$. The optimal depth increases, but the effect on $\rho_\ell$ depends on whether the technology improvement is uniform across layers.
 
+\subsection{Skip Connections and Parallel Branches}
+\label{subsec:skip_parallel}
+
+The baseline model assumes a serial chain: each layer feeds exactly one downstream layer. Modern LLM systems, however, employ skip connections (ResNet-style) and parallel branches (Mixture-of-Experts, tree architectures). We now show how these architectures fit within our framework.
+
+\paragraph{Skip connections.} A skip connection from layer $\ell$ to layer $\ell' > \ell+1$ provides an additional signal path that bypasses intermediate layers. The effective precision at layer $\ell'$ becomes:
+\begin{equation}\label{eq:skip_precision}
+\tau^{\text{skip}}_{\ell'} = \tau^{\text{serial}}_{\ell'} + \alpha_{\text{skip}} \cdot \tau^{\text{prior}}_\ell \cdot \eta_{\text{skip}}^{\ell' - \ell},
+\end{equation}
+where $\alpha_{\text{skip}} \in (0,1)$ is the weight on the skip path and $\eta_{\text{skip}} > \eta_{\text{serial}}$ is the preservation rate along the skip connection (higher because fewer intermediate transformations). Skip connections raise the effective preservation rate but cannot eliminate the bound: even with $\eta_{\text{skip}} \approx 1$, the serial path still decays geometrically, and the skip path's contribution is weighted by $\alpha_{\text{skip}} < 1$.
+
+\begin{proposition}[Skip Connections and Finite Depth]\label{prop:skip_connections}
+In a chain with skip connections, the top-layer precision satisfies $\tau^{\text{skip}}_L > \tau^{\text{serial}}_L$ for all $L \geq 2$, but $\lim_{L \to \infty} \tau^{\text{skip}}_L = 0$ whenever $\alpha_{\text{skip}} < 1$ or $\eta_{\text{skip}} < 1$. The finite-optimal-depth result holds.
+\end{proposition}
+
+\begin{proof}
+The skip connection adds a positive term to $\tau^{\text{serial}}_L$, so $\tau^{\text{skip}}_L > \tau^{\text{serial}}_L$. For the limit, if $\alpha_{\text{skip}} < 1$, the skip contribution is bounded by $\alpha_{\text{skip}} \tau^{\text{prior}}_\ell \eta_{\text{skip}}^{L-\ell} \to 0$ as $L \to \infty$. If $\alpha_{\text{skip}} = 1$ but $\eta_{\text{skip}} < 1$, the same limit holds. The serial component $\tau^{\text{serial}}_L$ also converges to 0 by Proposition~\ref{prop:precision_path}. Hence $\tau^{\text{skip}}_L \to 0$.
+\end{proof}
+
+\paragraph{Parallel branches.} Consider a tree with $M$ parallel branches at layer $\ell$. Each branch $m$ receives a subset of $K/M$ signals and produces a posterior $\tau^*_{\ell,m}$. The aggregate posterior is:
+\begin{equation}\label{eq:tree_posterior}
+\tau^*_\ell = \sum_{m=1}^{M} w_m \tau^*_{\ell,m},
+\end{equation}
+where $w_m$ are aggregation weights. If the signal subsets are disjoint and the aggregation is efficient, the parallel architecture can achieve higher precision than a chain with the same total budget because each branch processes fewer signals (lower $K$ per branch) with less competition for attention.
+
+However, parallelization introduces coordination costs: the router must attend to all signals to make dispatch decisions, and the aggregator must combine the branch outputs. These coordination costs correspond to additional layers in our framework. The optimal architecture (chain vs.~tree vs.~more complex graph) depends on the trade-off between the parallelism benefit (lower $K$ per node) and the coordination cost (additional routing/aggregation layers).
+
+\subsection{Memory-Augmented Architectures and MACLA}
+\label{subsec:macla}
+
+Memory-augmented architectures such as MACLA (Memory-Augmented Contrastive Learning Agent) explicitly separate semantic reasoning from a compact, hierarchical procedural memory. These systems demonstrate performance plateaus and slight overcapacity degradation---precisely the phenomena our model explains.
+
+We can interpret MACLA's evidence buffers and procedural memory as architectural choices that raise $\bar{\eta}$. In our framework:
+\begin{itemize}
+\item \textbf{Evidence buffers} increase the effective preservation rate by storing raw upstream artifacts that can be retrieved without re-processing: $\Delta \bar{\eta} \approx +0.05$ to $+0.15$.
+\item \textbf{Procedural memory} captures task-specific attention patterns, effectively raising the attention elasticity $\gamma$ for familiar tasks: $\Delta \gamma \approx +0.02$ to $+0.08$.
+\item \textbf{Hierarchical memory} organizes information at multiple granularities, reducing the effective signal count $K_\ell$ at each layer.
+\end{itemize}
+
+The key micro-implication is that memory design shifts $\bar{\eta}$ upward but cannot eliminate the bound. This provides a structural rationale for MACLA's observed ``optimal capacity bands'': beyond a certain memory size, the marginal gain in $\bar{\eta}$ diminishes (consistent with the concavity in Proposition~\ref{prop:memory_bound}), and the compounding of serial depreciation eventually dominates.
+
 \subsection{Strategic Information Transmission}
 \label{sec:strategic}
 
@@ -27,22 +68,30 @@ Dynamic information transmission \citep{ely2017beeps, renault2017optimal} studie
 
 When strategic distortion is possible, the principal may prefer to reduce the number of signals $K_\ell$ or increase the budget $A_\ell$ to ensure that the layer attends to all relevant signals (eliminating the ``hiding by ignoring'' possibility). This provides an alternative rationale for signal reduction that complements the precision-based rationale in Proposition \ref{prop:cost_min}.
 
-\subsection{Parallel Processing: Trees versus Chains}
-\label{subsec:trees}
-
-The baseline model assumes a chain architecture: each layer feeds a single downstream layer. In practice, many LLM systems use tree architectures: a router dispatches signals to multiple parallel agents, and their outputs are aggregated before the next stage.
-
-Consider a tree with $M$ parallel branches at layer $\ell$. Each branch $m$ receives a subset of signals and produces a posterior $\tau^*_{\ell,m}$. The aggregate posterior is:
-\begin{equation}\label{eq:tree_posterior}
-\tau^*_\ell = \sum_{m=1}^{M} w_m \tau^*_{\ell,m},
-\end{equation}
-where $w_m$ are aggregation weights. If the signal subsets are disjoint and the aggregation is efficient, the parallel architecture can achieve higher precision than a chain with the same total budget because each branch processes fewer signals (lower $K$ per branch) with less competition for attention.
-
-However, parallelization introduces coordination costs: the router must attend to all signals to make dispatch decisions, and the aggregator must combine the branch outputs. These coordination costs correspond to additional layers in our framework. The optimal architecture (chain vs.~tree vs.~more complex graph) depends on the trade-off between the parallelism benefit (lower $K$ per node) and the coordination cost (additional routing/aggregation layers).
-
-\subsection{Human-AI Hybrid Chains}
+\subsection{Human-in-the-Loop Review}
 \label{subsec:human_ai}
 
 When some layers are staffed by human agents with different attention technologies, the transmission factor becomes layer-specific: $\rho^{\text{human}}_\ell$ vs.~$\rho^{\text{AI}}_\ell$. The optimal chain may involve alternating human and AI layers to exploit comparative advantage in information processing.
+
+\paragraph{Modeling human layers.} Unlike AI agents, human reviewers exhibit bounded rationality. We model a human layer with two parameters: $\gamma_{\text{human}}$ (attention elasticity, typically higher than AI for small $K$ but lower for large $K$) and $\beta \in (0,1]$ (bounded rationality coefficient). The human's posterior precision is:
+\begin{equation}\label{eq:human_update}
+\tau^{\text{human}}_\ell = \beta \cdot \tau^{\text{AI}}_{\ell-1} + (1-\beta) \cdot \tau^{\text{prior}}_{\text{human}} + \varepsilon_{\text{human}},
+\end{equation}
+where $\beta < 1$ captures sub-Bayesian updating (humans under-weight new information relative to their priors) and $\varepsilon_{\text{human}} \sim \mathcal{N}(0, \sigma^2_{\text{human}})$ captures idiosyncratic noise. When $\beta = 1$ and $\sigma_{\text{human}} = 0$, the human is fully Bayesian.
+
+\paragraph{Optimal hybrid chains.} The interaction between AI and human layers generates novel comparative statics. Because human precision is bounded by cognitive capacity (typically $K_{\text{human}} \ll K_{\text{AI}}$), placing a human at a layer with many signals is inefficient. However, humans excel at tasks requiring judgment, contextual interpretation, and ethical reasoning---capabilities that are poorly captured by precision metrics alone.
+
+\begin{proposition}[U-Shaped Optimal Depth in Hybrid Chains]\label{prop:hybrid_depth}
+Consider a chain with one human layer and $L-1$ AI layers. The optimal depth $L^*_{\text{hybrid}}$ is U-shaped in the context window $A$: 
+\begin{enumerate}[label=(\roman*)]
+\item For small $A$: $L^*_{\text{hybrid}} < L^*_{\text{pure AI}}$ because human cognitive limits bind.
+\item For intermediate $A$: $L^*_{\text{hybrid}} > L^*_{\text{pure AI}}$ because the human can effectively review AI outputs.
+\item For large $A$: $L^*_{\text{hybrid}} \approx L^*_{\text{pure AI}}$ because AI precision dominates human review.
+\end{enumerate}
+\end{proposition}
+
+\begin{proof}[Proof Sketch]
+Small $A$: The AI's output precision is low, and the human's bounded capacity ($\beta < 1$) compounds the loss. The hybrid chain underperforms pure AI. Intermediate $A$: The AI produces high-quality outputs that the human can verify and augment, creating complementarities. Large $A$: The AI's precision approaches its technological ceiling; adding a human layer provides diminishing returns because the AI is already near-optimal.
+\end{proof}
 
 \textbf{Example.} In medical diagnosis, a human doctor may have $\gamma_{\text{human}} = 0.6$ (can effectively integrate a small number of key symptoms) while an LLM has $\gamma_{\text{LLM}} = 0.35$ (processes many lab results but with diminishing returns). The optimal chain may place the human at the top layer (final diagnosis) and the LLM at the bottom layer (lab result aggregation), rather than the reverse.

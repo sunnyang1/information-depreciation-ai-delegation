@@ -73,3 +73,13 @@ Thumbs.db
 # Environment
 .env
 .env.local
+
+# Test coverage
+.coverage
+htmlcov/
+
+# Archive / backups
+archive/
+
+# Generated PDFs (keep specific ones explicitly if needed)
+# *.pdf

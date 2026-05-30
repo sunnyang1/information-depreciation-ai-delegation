@@ -1,0 +1,74 @@
+# Pre-commit hooks configuration
+# Install: pip install pre-commit && pre-commit install
+# Run manually: pre-commit run --all-files
+
+repos:
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v4.5.0
+    hooks:
+      - id: trailing-whitespace
+      - id: end-of-file-fixer
+      - id: check-yaml
+      - id: check-json
+      - id: check-added-large-files
+        args: ['--maxkb=1024']
+      - id: check-merge-conflict
+      - id: check-symlinks
+      - id: debug-statements
+      - id: mixed-line-ending
+
+  - repo: https://github.com/psf/black
+    rev: 23.12.1
+    hooks:
+      - id: black
+        language_version: python3
+        files: ^(experiments/|simulation_regression\.py)
+        args: ['--line-length=100']
+
+  - repo: https://github.com/pycqa/isort
+    rev: 5.13.2
+    hooks:
+      - id: isort
+        files: ^(experiments/|simulation_regression\.py)
+        args: ['--profile=black', '--line-length=100']
+
+  - repo: https://github.com/pycqa/flake8
+    rev: 6.1.0
+    hooks:
+      - id: flake8
+        files: ^(experiments/|simulation_regression\.py)
+        args: ['--max-line-length=100', '--ignore=E501,W503,E741,E731,E402']
+
+  - repo: https://github.com/pre-commit/mirrors-mypy
+    rev: v1.8.0
+    hooks:
+      - id: mypy
+        files: ^experiments/\w+\.py$
+        args: ['--ignore-missing-imports', '--follow-imports=silent']
+        additional_dependencies: [numpy, types-requests]
+
+  - repo: local
+    hooks:
+      - id: python-syntax-check
+        name: Python syntax check (staged files)
+        entry: python -m py_compile
+        language: system
+        files: \.py$
+        pass_filenames: true
+
+      - id: experiment-smoke-test
+        name: Experiment smoke test
+        entry: bash -c 'cd experiments && python -c "
+import sys; sys.path.insert(0, \".\")
+import exps
+from registry import get_experiment
+for eid in [\"exp01\", \"exp02\", \"exp03\"]:
+    result = get_experiment(eid).run(n_trials=3, total_budget=50000)
+    assert result.get(\"status\") != \"failed\", f\"{eid} failed\"
+    print(f\"  {eid}: OK\")
+print(\"All smoke tests passed\")
+"'
+        language: system
+        files: ^experiments/.*\.py$
+        pass_filenames: false
+        always_run: false

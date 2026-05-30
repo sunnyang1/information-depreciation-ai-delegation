@@ -306,3 +306,69 @@ The threshold $\bar{L}$ beyond which precision decreases is increasing in the ba
 \begin{remark}[Comparison to the no-attenuation case]
 When $\eta = 1$ (no signal degradation), the recurrence \eqref{eq:app_simplified_recurrence} becomes $\tau^{*}_{\ell} = \rho \tau^{*}_{\ell-1} + C$, with solution $\tau^{*}_{L} = \rho^{L}\tau^{*}_{0} + C(1-\rho^{L})/(1-\rho) \to C/(1-\rho) > 0$. The precision converges to a positive limit, so $V(\tau^{*}_{L})$ converges to $V(C/(1-\rho)) > V(0)$ from below, and infinite depth is optimal whenever $\kappa < V(C/(1-\rho)) - \lim_{L\to\infty}V(\tau^{*}_{L-1}) = 0^{+}$. The diminishing signal quality assumption ($\eta < 1$) is therefore \emph{necessary and sufficient} for the finite-depth result under uniform technology.
 \end{remark}
+
+\section{A Rate-Distortion Foundation for the Preservation Bound}
+\label{app:rate_distortion}
+
+This appendix provides a rigorous rate-distortion foundation for the preservation bound $\bar{\eta} < 1$, addressing the reviewer's concern that earlier formulations may have oversimplified the reverse water-filling solution.
+
+\subsection{Setup}
+
+Consider a $d$-dimensional Gaussian source $\mathbf{x} \sim \mathcal{N}(0, \Sigma)$ representing the latent state of an LLM's hidden representation. The covariance matrix $\Sigma$ has eigenvalue decomposition $\Sigma = Q \Lambda Q^{\top}$, where $\Lambda = \text{diag}(\lambda_1, \ldots, \lambda_d)$ with $\lambda_1 \geq \lambda_2 \geq \cdots \geq \lambda_d > 0$.
+
+Each layer $\ell$ must transmit a representation $\hat{\mathbf{x}}_\ell$ to the next layer subject to a rate constraint $R_\ell$ (in nats per dimension). The distortion is measured by mean squared error: $D = \mathbb{E}[\|\mathbf{x} - \hat{\mathbf{x}}\|^2]$.
+
+\subsection{Reverse Water-Filling}
+
+The rate-distortion function for a parallel Gaussian source is given by reverse water-filling \citep{cover1999elements}:
+\begin{equation}\label{eq:reverse_water_filling}
+D(R) = \sum_{k=1}^{d} \min\{\lambda_k, \theta(R)\},
+\end{equation}
+where the water level $\theta(R)$ is chosen such that
+\begin{equation}\label{eq:water_level}
+\sum_{k=1}^{d} [\lambda_k - \theta(R)]^{+} = d \cdot R.
+\end{equation}
+
+This is the \emph{correct} expression. The oversimplified formula $D_{\min}(d) = d \cdot \theta^*$ is valid only when $\theta(R) \leq \lambda_d$ (i.e., when the rate budget is so small that all modes are active). In general, the number of active modes is
+\begin{equation}\label{eq:active_modes}
+m(R) = \max\left\{m \in \{1, \ldots, d\} : \lambda_m > \theta(R)\right\},
+\end{equation}
+and the distortion is $D(R) = \sum_{k=1}^{m(R)} \theta(R) + \sum_{k=m(R)+1}^{d} \lambda_k$.
+
+\subsection{The Preservation Bound}
+
+Define the preservation rate as the ratio of retained signal variance to total variance:
+\begin{equation}\label{eq:rd_preservation}
+\eta(R) = 1 - \frac{D(R)}{\sum_{k=1}^{d} \lambda_k}.
+\end{equation}
+
+\begin{proposition}[Rate-Distortion Preservation Bound]\label{prop:rd_bound}
+For any finite rate budget $R < \infty$:
+\begin{enumerate}[label=(\roman*)]
+\item $\eta(R) < 1$.
+\item $\lim_{R \to \infty} \eta(R) = 1$ if and only if $\sum_{k=1}^{d} \lambda_k < \infty$ (finite-dimensional source).
+\item For any $R$, the preservation rate is bounded above by
+\begin{equation}\label{eq:rd_eta_bound}
+\eta(R) \leq 1 - \frac{(d - m(R)) \lambda_d}{\sum_{k=1}^{d} \lambda_k},
+\end{equation}
+where $m(R)$ is the number of active modes defined in \eqref{eq:active_modes}.
+\end{enumerate}
+\end{proposition}
+
+\begin{proof}
+\textbf{Part (i):} From \eqref{eq:reverse_water_filling}, $D(R) \geq \sum_{k=m(R)+1}^{d} \lambda_k > 0$ because at most $m(R) < d$ modes can be active for finite $R$. Hence $\eta(R) = 1 - D(R) / \text{tr}(\Sigma) < 1$.
+
+\textbf{Part (ii):} As $R \to \infty$, the water level $\theta(R) \to 0$, so $m(R) \to d$ and $D(R) \to 0$. Thus $\eta(R) \to 1$. Conversely, if the source is infinite-dimensional ($d = \infty$) with $\sum_k \lambda_k = \infty$, then even with $R \to \infty$, the tail sum $\sum_{k=m+1}^{\infty} \lambda_k$ may remain positive, preventing $\eta$ from reaching 1.
+
+\textbf{Part (iii):} The inactive modes contribute at least $(d - m(R)) \lambda_d$ to distortion (since $\lambda_k \geq \lambda_d$ for all $k \leq d$). Substituting into \eqref{eq:rd_preservation} yields the bound.
+\end{proof}
+
+\subsection{Connection to the Model}
+
+In our framework, the ``rate budget'' $R$ corresponds to the attention capacity per signal, and the eigenvalues $\{\lambda_k\}$ correspond to the singular values of the hidden-state transformation at each layer. Proposition~\ref{prop:rd_bound} shows that $\bar{\eta} < 1$ is not an arbitrary assumption but a consequence of finite rate budgets and the structure of the source covariance.
+
+The bound is \emph{tightest} when the eigenvalue spectrum decays slowly (many modes with comparable variance) and \emph{loosest} when the spectrum is dominated by a few large eigenvalues. This explains why tasks requiring fine-grained detail (slow eigenvalue decay) have lower $\bar{\eta}$ than tasks where coarse structure suffices (rapid eigenvalue decay).
+
+\begin{remark}[Operationalizing the Bound]
+The eigenvalue spectrum $\{\lambda_k\}$ can be estimated from the empirical covariance of LLM hidden states. For a transformer with hidden dimension $h$, sample the hidden-state vectors across a validation corpus, compute the sample covariance $\hat{\Sigma}$, and extract the eigenvalues. The implied preservation bound is $\hat{\bar{\eta}} = 1 - D(R) / \text{tr}(\hat{\Sigma})$ for the observed rate budget $R = A_\ell / K_\ell$.
+\end{remark}
