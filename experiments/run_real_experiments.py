@@ -150,7 +150,7 @@ MODEL_REGISTRY: Dict[str, Dict[str, Any]] = {
         "params_B": 7,
         "context_window": 2048,
         "fallback_id": "TinyLlama/TinyLlama-1.1B-Chat-v1.0",
-        "description": "Falcon-7B Instruct (fully public, no token needed, transformers 4.35 native)",  # noqa: E501
+        "description": "Falcon-7B Instruct (fully public, no token needed)",  # noqa: E501
     },
     "mistral7b": {
         "hf_id": "mistralai/Mistral-7B-Instruct-v0.3",
@@ -200,9 +200,9 @@ MODEL_REGISTRY: Dict[str, Dict[str, Any]] = {
         "context_window": 2048,
         "fallback_id": None,
         # NOTE: Phi-2 requires transformers>=4.36.0 for native architecture support.
-        # With transformers==4.35.0, use trust_remote_code=False (already set in loader)
-        # but may still fail if the model config uses newer features.
-        "description": "Microsoft Phi-2 (small, good quality). Requires transformers>=4.36 or trust_remote_code",  # noqa: E501
+        # With transformers>=4.40.0 (project default), Phi-2 loads natively without
+        # trust_remote_code.
+        "description": "Microsoft Phi-2 (small, good quality). Loads natively with transformers>=4.40",  # noqa: E501
     },
 }
 

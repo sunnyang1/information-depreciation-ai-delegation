@@ -147,15 +147,9 @@ fi
 # ============ 4. 安装核心依赖 ============
 info "步骤 4/10: 安装transformers及相关库"
 
-# 对于 Blackwell / PyTorch 2.7，transformers 4.35 仍可工作，但建议用更新版本
-if [ "$GPU_ARCH" = "blackwell" ] || [ "$PYTORCH_VERSION" != "none" ]; then
-    info "检测到新架构/新版本，安装兼容版transformers"
-    pip install transformers>=4.40.0
-    pip install tokenizers
-else
-    pip install transformers==4.35.0
-    pip install "tokenizers>=0.14.0,<0.15.0"
-fi
+# 统一使用 transformers>=4.40.0，支持 Qwen2.5、Llama-3.1 等新架构
+pip install transformers>=4.40.0
+pip install tokenizers
 
 # pyarrow 兼容性处理
 pip install "pyarrow>=12.0.0,<14.0.0"
