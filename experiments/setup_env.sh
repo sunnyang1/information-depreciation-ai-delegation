@@ -65,14 +65,14 @@ except Exception:
 # ============ 0. 克隆项目（如尚未克隆） ============
 PROJECT_DIR="/root/autodl-tmp/MS_Attention4Org"
 if [ ! -d "$PROJECT_DIR" ]; then
-    info "步骤 0/9: 从GitHub克隆项目仓库"
+    info "步骤 0/10: 从GitHub克隆项目仓库"
     mkdir -p /root/autodl-tmp
     cd /root/autodl-tmp
     git clone https://github.com/sunnyang1/information-depreciation-ai-delegation.git "$PROJECT_DIR" || warn "克隆失败，请手动上传代码"
 fi
 
 # ============ 1. 检测预装环境 ============
-info "步骤 1/9: 检测预装环境"
+info "步骤 1/10: 检测预装环境"
 
 PYTHON_VERSION=$(python --version 2>&1 | awk '{print $2}')
 PYTORCH_VERSION=$(check_pytorch_installed)
@@ -87,7 +87,7 @@ if [ "$GPU_ARCH" = "blackwell" ]; then
 fi
 
 # ============ 2. 创建/激活conda环境 ============
-info "步骤 2/9: 配置conda环境"
+info "步骤 2/10: 配置conda环境"
 
 if [ "$PYTHON_VERSION" = "3.12" ] && [ "$PYTORCH_VERSION" != "none" ]; then
     ok "检测到预装 Python 3.12 + PyTorch，跳过conda环境创建"
@@ -101,7 +101,7 @@ else
 fi
 
 # ============ 3. 安装/验证PyTorch ============
-info "步骤 3/9: 安装/验证PyTorch"
+info "步骤 3/10: 安装/验证PyTorch"
 
 if [ "$PYTORCH_VERSION" != "none" ]; then
     ok "PyTorch 已预装 (v$PYTORCH_VERSION)，跳过安装"
@@ -145,7 +145,7 @@ else
 fi
 
 # ============ 4. 安装核心依赖 ============
-info "步骤 4/9: 安装transformers及相关库"
+info "步骤 4/10: 安装transformers及相关库"
 
 # 对于 Blackwell / PyTorch 2.7，transformers 4.35 仍可工作，但建议用更新版本
 if [ "$GPU_ARCH" = "blackwell" ] || [ "$PYTORCH_VERSION" != "none" ]; then
@@ -165,7 +165,7 @@ pip install scipy numpy tqdm pandas matplotlib statsmodels
 ok "核心依赖安装完成"
 
 # ============ 5. 安装量化与加速库 ============
-info "步骤 5/9: 安装量化与加速库"
+info "步骤 5/10: 安装量化与加速库"
 
 # bitsandbytes: Blackwell需要新版本
 if [ "$GPU_ARCH" = "blackwell" ]; then
@@ -177,7 +177,7 @@ fi
 ok "量化库处理完成"
 
 # ============ 6. 安装vLLM ============
-info "步骤 6/9: 安装vLLM加速推理库"
+info "步骤 6/10: 安装vLLM加速推理库"
 
 if [ "$GPU_ARCH" = "blackwell" ]; then
     warn "Blackwell架构 (RTX 5090) 下 vLLM 0.2.1 不兼容"
@@ -189,7 +189,7 @@ fi
 ok "vLLM处理完成"
 
 # ============ 7. 配置HuggingFace国内镜像 ============
-info "步骤 7/9: 配置HuggingFace镜像（国内加速）"
+info "步骤 7/10: 配置HuggingFace镜像（国内加速）"
 
 # 创建HuggingFace配置文件
 mkdir -p ~/.config/huggingface
@@ -215,12 +215,12 @@ mkdir -p /root/autodl-tmp/huggingface_cache
 ok "HF镜像配置完成 (使用 hf-mirror.com)"
 
 # ============ 8. 创建实验目录 ============
-info "步骤 8/9: 创建实验目录结构"
-mkdir -p /root/autodl-tmp/experiments/{results,figures,models,data,logs,checkpoints}
+info "步骤 8/10: 创建实验目录结构"
+mkdir -p "$PROJECT_DIR/experiments"/{results,figures,models,data,logs,checkpoints}
 ok "实验目录结构创建完成"
 
 # ============ 9. 环境验证 ============
-info "步骤 9/9: 验证关键包安装"
+info "步骤 9/10: 验证关键包安装"
 
 python << 'PYEOF'
 import sys
@@ -275,7 +275,7 @@ ok "环境验证完成"
 # ============ 10. 创建快捷脚本 ============
 info "步骤 10/10: 创建实验运行快捷脚本"
 
-EXP_DIR="/root/autodl-tmp/experiments"
+EXP_DIR="$PROJECT_DIR/experiments"
 
 cat > "$EXP_DIR/run_simulation.sh" << 'EOF'
 #!/bin/bash
@@ -379,23 +379,23 @@ echo -e "  Python版本: ${YELLOW}$(python --version | awk '{print $2}')${NC}"
 echo -e "  PyTorch版本: ${YELLOW}$(python -c 'import torch; print(torch.__version__)' 2>/dev/null || echo '未安装')${NC}"
 echo -e "  CUDA版本: ${YELLOW}$(python -c 'import torch; print(torch.version.cuda if torch.cuda.is_available() else \"N/A\")' 2>/dev/null || echo 'N/A')${NC}"
 echo -e "  GPU架构: ${YELLOW}$GPU_ARCH${NC}"
-echo -e "  实验目录: ${YELLOW}/root/autodl-tmp/experiments/${NC}"
+echo -e "  实验目录: ${YELLOW}$PROJECT_DIR/experiments/${NC}"
 echo -e "  模型缓存: ${YELLOW}/root/autodl-tmp/huggingface_cache/${NC}"
 echo ""
 echo -e "  激活环境: ${GREEN}conda activate info_depreciation${NC}"
 echo ""
 echo -e "  ${BLUE}模拟实验 (无需GPU):${NC}"
-echo -e "    ${GREEN}bash /root/autodl-tmp/experiments/run_simulation.sh${NC}"
-echo -e "    或手动: python run.py --experiment all"
-echo -e "    按类别: python run.py --category baseline"
-echo -e "    单实验: python run.py --experiment exp01"
-echo -e "    列全部: python run.py --list"
+echo -e "    ${GREEN}bash $PROJECT_DIR/experiments/run_simulation.sh${NC}"
+echo -e "    或手动: cd $PROJECT_DIR/experiments && python run.py --experiment all"
+echo -e "    按类别: cd $PROJECT_DIR/experiments && python run.py --category baseline"
+echo -e "    单实验: cd $PROJECT_DIR/experiments && python run.py --experiment exp01"
+echo -e "    列全部: cd $PROJECT_DIR/experiments && python run.py --list"
 echo ""
 echo -e "  ${BLUE}真实LLM实验 (需要GPU):${NC}"
-echo -e "    ${GREEN}bash /root/autodl-tmp/experiments/run_real.sh${NC}"
-echo -e "    或手动: python run_real_experiments.py --experiment all --model_size 7b"
+echo -e "    ${GREEN}bash $PROJECT_DIR/experiments/run_real.sh${NC}"
+echo -e "    或手动: cd $PROJECT_DIR/experiments && python run_real_experiments.py --experiment all --model_size 7b"
 echo ""
 echo -e "  ${BLUE}回归分析:${NC}"
-echo -e "    ${GREEN}python simulation_regression.py${NC}"
+echo -e "    ${GREEN}cd $PROJECT_DIR && python simulation_regression.py${NC}"
 echo ""
 echo "========================================"
